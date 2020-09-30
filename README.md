@@ -26,20 +26,37 @@ be further simplified.
 New is a configuration option to implement showing the slide(s), transmitted
 as part of the service, on the screen. 
 
+-------------------------------------------------------------------------
+Supported devices
+-------------------------------------------------------------------------
+
+Currently, the following devices are supported
+
+	a. Adalm Pluto
+
+	b. RTLSDR devices (also known as DABsticks)
+
+	c. SDRplay devices (using the 2.13 device library)
+
+	d. AIRSpy devices
+
 ---------------------------------------------------------------------------
 Building an executable
 --------------------------------------------------------------------------
 
 Libraries needed (both the libraries and the development packages):
 
- a. FFTWf
- b. Faad
- c. sndFile
- d. libsamplerate
+	a. FFTWf
+
+	b. libfaad
+
+	c. sndFile
+
+	d. libsamplerate
 
 For showing slides one has to install
 
-  e. opencv
+	e. opencv
 
 Of course, the support library for the device of choice need to
 be installed as well.
