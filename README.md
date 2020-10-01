@@ -28,7 +28,7 @@ service list. An updated implementation is built in this
 *second generation* of the command line decoder.
 
 Selecting the **next** audio service on the list is by typing "+"
-on the terminal, selecting the **previous ** audio service by
+on the terminal, selecting the **previous** audio service by
 typing '-' followed by a new line (the terminal mode remains "cooked",
 that is why the newline is required.
 
