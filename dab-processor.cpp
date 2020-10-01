@@ -290,32 +290,15 @@ void	dabProcessor::show_Corrector (int freqOffset) {
 bool	dabProcessor::signalSeemsGood	(void) {
 	return isSynced;
 }
-//
-//	to be handled by delegates
-uint8_t dabProcessor::kindofService	(std::string s) {
-        return my_ficHandler. kindofService (s);
+
+bool	dabProcessor::is_audioService		(std::string serviceName) {
+audiodata ad;
+	dataforAudioService (serviceName, &ad);
+	return ad. defined;
 }
 
 void    dabProcessor::dataforAudioService	(std::string s,audiodata *dd) {
         my_ficHandler. dataforAudioService (s, dd, 0);
-}
-
-void    dabProcessor::dataforAudioService	(std::string s,
-                                                  audiodata *d, int16_t c) {
-        my_ficHandler. dataforAudioService (s, d, c);
-}
-
-void    dabProcessor::dataforDataService	(std::string s,
-                                                    packetdata *d, int16_t c) {
-        my_ficHandler. dataforDataService (s, d, c);
-}
-
-int32_t	dabProcessor::get_SId		(std::string s) {
-	return my_ficHandler. SIdFor (s);
-}
-
-std::string dabProcessor::get_serviceName (int32_t SId) {
-	return my_ficHandler. nameFor (SId);
 }
 
 void    dabProcessor::reset_msc (void) {
@@ -327,24 +310,7 @@ void    dabProcessor::set_audioChannel (audiodata *d) {
 	programdataHandler (d, userData);
 }
 
-void    dabProcessor::set_dataChannel (packetdata *d) {
-	my_mscHandler. set_dataChannel (d);
-}
-
 void    dabProcessor::clearEnsemble     (void) {
         my_ficHandler. reset ();
-}
-
-bool    dabProcessor::wasSecond (int16_t cf, dabParams *p) {
-        switch (p -> get_dabMode ()) {
-           default:
-           case 1:
-              return (cf & 07) >= 4;
-           case 2:
-           case 3:
-              return (cf & 02);
-           case 4:
-              return (cf & 03) >= 2;
-        }
 }
 

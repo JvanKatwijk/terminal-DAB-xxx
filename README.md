@@ -1,17 +1,15 @@
 
 -------------------------------------------------------------------------
-dab-cmdline-2: dab-cmdline with pictures 
+dab-cmdline-2:
+a cmdline dab decoder with slides and next/previous service selectors
 -------------------------------------------------------------------------
 
 ![dab-cmdline](/dab-cmdline.png?raw=true)
 
 For quite some time, the "dab-cmdline" library and example programs are
 functioning. While originally set up as a library feature,
-most use turned out to be as cmdline interface for DAB decoding..
-
-While there are several variations of the command line examples
-(i.e. there were examples 1 .. many), the most basic example,
-example 2 was used most. This is no surprise, it implements just a simple
+the most basic example, example 2 was used most.
+This is no surprise, it implements just a simple
 command line driven dab decoder.
 
 Recently, while experimenting  with the Adalm Pluto,
@@ -23,8 +21,20 @@ the command line, I removed lots of code dealing with packet data
 and since there was no need for a separate "library", code could
 be further simplified.
 
-New is a configuration option to implement showing the slide(s), transmitted
-as part of the service, on the screen. 
+The approach taken in example 2, just starting the program with a frozen
+selection of one single service is somewhat limited in practive.
+The example 5 had a facility to scan through subsequent services of the
+service list. An updated implementation is built in this
+*second generation* of the command line decoder.
+
+Selecting the **next** audio service on the list is by typing "+"
+on the terminal, selecting the **previous ** audio service by
+typing '-' followed by a new line (the terminal mode remains "cooked",
+that is why the newline is required.
+
+While doing so, I also wanted to see the station slide(s) on my screen,
+therefore, new is a configuration option to implement showing
+the slide(s), transmitted as part of the service, on the screen. 
 
 -------------------------------------------------------------------------
 Supported devices

@@ -4,20 +4,20 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the DAB-library program
+ *    This file is part of the dab-cmdline-2
  *
- *    DAB-library is free software; you can redistribute it and/or modify
+ *    dab-cmdline-2 is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    DAB-library is distributed in the hope that it will be useful,
+ *    dab-cmdline-2 is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with DAB-library; if not, write to the Free Software
+ *    along with dab-cmdline-2; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
@@ -39,11 +39,7 @@
 #include	"ringbuffer.h"
 #include	"dab-api.h"
 #include	"sample-reader.h"
-#ifdef	__TII_INCLUDED__
-#include	"tii_detector.h"
-#endif
 //
-class	deviceHandler;
 
 class dabProcessor {
 public:
@@ -68,18 +64,9 @@ public:
 	bool	signalSeemsGood		(void);
 	void	show_Corrector		(int);
 //      inheriting from our delegates
-	void		setSelectedService	(std::string);
-	uint8_t		kindofService           (std::string);
+	bool		is_audioService		(std::string);
 	void		dataforAudioService     (std::string,   audiodata *);
-	void		dataforAudioService     (std::string,
-	                                             audiodata *, int16_t);
-	void		dataforDataService      (std::string,   packetdata *);
-	void		dataforDataService      (std::string,
-	                                             packetdata *, int16_t);
-	int32_t		get_SId			(std::string s);
-	std::string	get_serviceName		(int32_t);
 	void		set_audioChannel        (audiodata *);
-	void		set_dataChannel         (packetdata *);
 	std::string	get_ensembleName        (void);
 	void		clearEnsemble           (void);
 	void		reset_msc		(void);

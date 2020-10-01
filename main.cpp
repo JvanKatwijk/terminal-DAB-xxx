@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2015, 2016, 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline
+ *    This file is part of the dab-cmdline-2
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    dab-cmdline-2 is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    dab-cmdline-2 is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with dab-cmdline-2; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -28,6 +28,7 @@
 #include        <iostream>
 #include	<complex>
 #include	<vector>
+#include	<thread>
 #include	"audiosink.h"
 #include	"filesink.h"
 #include	"dab-api.h"
@@ -45,9 +46,9 @@
 #include	"rtlsdr-handler.h"
 #endif
 #ifdef	__SHOW_PICTURES__
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+#include	<opencv2/core.hpp>
+#include	<opencv2/imgcodecs.hpp>
+#include	<opencv2/highgui.hpp>
 using namespace cv;
 #endif
 #include	<locale>
@@ -57,7 +58,16 @@ using namespace cv;
 using std::cerr;
 using std::endl;
 
-void    printOptions (void);	// forward declaration
+void    printOptions	();	// forward declaration
+void	listener	();
+static
+std::atomic<uint8_t> serviceChange;
+
+static
+std::string	next_audioServiceName	(const std::string &s);
+static
+std::string	prev_audioServiceName	(const std::string &s);
+
 //	we deal with callbacks from different threads. So, if you extend
 //	the functions, take care and add locking whenever needed
 static
@@ -78,7 +88,9 @@ std::atomic<bool>ensembleRecognized;
 static
 audioBase	*soundOut	= nullptr;
 
-std::string	programName		= "Sky Radio";
+static
+std::string	serviceName	= "Sky Radio";
+
 //int32_t		serviceIdentifier	= -1;
 
 static void sighandler (int signum) {
@@ -107,32 +119,33 @@ void	ensemblenameHandler (std::string name, int Id, void *userData) {
 }
 
 
-std::vector<std::string> programNames;
-std::vector<int> programSIds;
+std::vector<std::string> serviceNames;
+std::vector<int> serviceSIds;
 
 #include	<bits/stdc++.h>
 
 std::unordered_map <int, std::string> ensembleContents;
 static
 void	programnameHandler (std::string s, int SId, void *userdata) {
-	for (std::vector<std::string>::iterator it = programNames.begin();
-	             it != programNames. end(); ++it)
+	for (std::vector<std::string>::iterator it = serviceNames.begin();
+	             it != serviceNames. end(); ++it)
 	   if (*it == s)
 	      return;
+
 	ensembleContents. insert (pair <int, std::string> (SId, s));
-	programNames. push_back (s);
-	programSIds . push_back (SId);
+	serviceNames. push_back (s);
+	serviceSIds . push_back (SId);
 	std::cerr << "program " << s << " is part of the ensemble\n";
 }
 
 static
 void	programdataHandler (audiodata *d, void *ctx) {
 	(void)ctx;
-	std::cerr << "\tstartaddress\t= " << d -> startAddr << "\n";
-	std::cerr << "\tlength\t\t= "     << d -> length << "\n";
-	std::cerr << "\tsubChId\t\t= "    << d -> subchId << "\n";
-	std::cerr << "\tprotection\t= "   << d -> protLevel << "\n";
-	std::cerr << "\tbitrate\t\t= "    << d -> bitRate << "\n";
+//	std::cerr << "\tstartaddress\t= " << d -> startAddr << "\n";
+//	std::cerr << "\tlength\t\t= "     << d -> length << "\n";
+//	std::cerr << "\tsubChId\t\t= "    << d -> subchId << "\n";
+//	std::cerr << "\tprotection\t= "   << d -> protLevel << "\n";
+//	std::cerr << "\tbitrate\t\t= "    << d -> bitRate << "\n";
 }
 
 //
@@ -143,6 +156,7 @@ void	dataOut_Handler (std::string dynamicLabel, void *ctx) {
 	(void)ctx;
 	std::cerr << dynamicLabel << "\r";
 }
+
 #ifdef	__SHOW_PICTURES__
 static
 std::string	thePicture;
@@ -279,7 +293,7 @@ Mat img;
 	         break;
 
 	      case 'P':
-	         programName	= optarg;
+	         serviceName	= optarg;
 	         break;
 
 	      case 'O':
@@ -472,46 +486,155 @@ Mat img;
 	}
 
 	run. store (true);
-	std::cerr << "we try to start program " <<
-	                                         programName << "\n";
-	audiodata ad;
-	theRadio -> dataforAudioService (programName. c_str (), &ad);
-	if (!ad. defined) {
-	   std::cerr << "sorry  we cannot handle service " << 
-	                                         programName << "\n";
-	   run. store (false);
-	   theRadio	-> stop ();
-	   delete theDevice;
-	   exit (22);
-	}
+	serviceChange. store (0);
+	std::thread keyboard_listener = std::thread (&listener);
 
-	theRadio	-> reset_msc ();
-	theRadio	-> set_audioChannel (&ad);
+	while (run. load () && theDuration != 0) {
+	   std::cerr << "we try to start program " <<
+	                                         serviceName << "\n";
+	   audiodata ad;
+	   theRadio -> dataforAudioService (serviceName. c_str (), &ad);
+	   if (!ad. defined) {
+	      std::cerr << "something went wrong,  we cannot handle service " << 
+	                                         serviceName << "\n";
+	      run. store (false);
+	      theRadio	-> stop ();
+	      delete theDevice;
+	      exit (22);
+	   }
 
-	while (run. load () && (theDuration != 0)) {
-	   if (theDuration > 0)
-	      theDuration --;
+	   theRadio	-> reset_msc ();
+	   theRadio	-> set_audioChannel (&ad);
+//
+//	This polling loop is run while the service plays
+	   while (run. load () && (theDuration != 0)) {
+	      if (theDuration > 0)
+	         theDuration --;
+	      if (serviceChange. load () != 0) {
+	         if (serviceChange. load () == 1)
+	            serviceName = next_audioServiceName (serviceName);
+	         else
+	         if (serviceChange. load () == 2)
+	            serviceName = prev_audioServiceName (serviceName);
+	         serviceChange. store (false);
+	         if (!img. empty ())
+	            destroyAllWindows ();
+	         break;
+	      }
+	   
 #ifdef	__SHOW_PICTURES__
-	   if (newPicture. load ()) {
-	      newPicture. store (false);
-	      image_path	= samples::findFile (thePicture);
-	      destroyAllWindows ();
-	      img		= imread (image_path, IMREAD_COLOR);
-	      if (!img. empty ()) {
-	         imshow (image_path, img);
-	         waitKey (1000);
+	      if (newPicture. load ()) {
+	         newPicture. store (false);
+	         image_path	= samples::findFile (thePicture);
+	         destroyAllWindows ();
+	         img		= imread (image_path, IMREAD_COLOR);
+	         if (!img. empty ()) {
+	            imshow (image_path, img);
+	            char c = waitKey (1000);
+	            if (c != -1)
+	               fprintf (stderr, "key was %d\n", c);
+	            if (c == '\n') 
+	              serviceChange. store (0);
+	         }
+	         else
+	            sleep (1);
 	      }
 	      else
+#endif
 	         sleep (1);
 	   }
-	   else
-#endif
-	      sleep (1);
 	}
 	theRadio	-> stop ();
 	theDevice	-> stopReader ();
 	delete theDevice;	
 	delete soundOut;
+	keyboard_listener. join ();
+}
+
+void	listener	(void) {
+	fprintf (stderr, "listener is running\n");
+	while (run. load ()) {
+	   char t = getchar ();
+	   switch (t) {
+	      case '+': serviceChange. store (1);
+	        break;
+	      case '-': serviceChange. store (2);
+	        break;
+	      default:
+	         break;
+	   }
+	}
+}
+
+bool	matches (std::string s1, std::string s2) {
+const char *ss1 = s1. c_str ();
+const char *ss2 = s2. c_str ();
+
+	while ((*ss1 != 0) && (*ss2 != 0)) {
+	   if (*ss2 != *ss1)
+	      return false;
+	   ss1 ++;
+	   ss2 ++;
+	}
+	return *ss2 == 0;
+}
+
+std::string	nextServiceName	(const std::string &s) {
+uint16_t	i;
+int16_t	foundIndex	= -1;
+
+	for (i = 0; i < serviceNames. size (); i ++) {
+	   if (matches (serviceNames [i], serviceName)) {
+	      if (i == serviceNames. size () - 1)
+	         foundIndex = 0;
+	      else 
+	         foundIndex = i + 1;
+	      break;
+	   }
+	}
+
+	if (foundIndex == -1) {
+	   fprintf (stderr, "system error\n");
+	   sighandler (9);
+	   exit (1);
+	}
+	return serviceNames [foundIndex];
+}
+
+std::string	prevServiceName	(const std::string &s) {
+uint16_t	i;
+int16_t	foundIndex	= -1;
+
+	for (i = 0; i < serviceNames. size (); i ++) {
+	   if (matches (serviceNames [i], serviceName)) {
+	      if (i == 0)
+	         foundIndex = serviceNames. size () - 1;
+	      else 
+	         foundIndex = i - 1;
+	      break;
+	   }
+	}
+
+	if (foundIndex == -1) {
+	   fprintf (stderr, "system error\n");
+	   sighandler (9);
+	   exit (1);
+	}
+	return serviceNames [foundIndex];
+}
+
+std::string	next_audioServiceName (const std::string &serviceName) {
+std::string next	= nextServiceName (serviceName);
+	while (!theRadio -> is_audioService (next))
+	   next = nextServiceName (next);
+	return next;
+}
+
+std::string	prev_audioServiceName (const std::string &serviceName) {
+std::string prev	= prevServiceName (serviceName);
+	while (!theRadio -> is_audioService (prev))
+	   prev = prevServiceName (prev);
+	return prev;
 }
 
 void    printOptions (void) {

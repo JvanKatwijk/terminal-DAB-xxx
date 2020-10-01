@@ -71,8 +71,8 @@ int32_t i, j;
 	   protectionHandler	= new eep_protection (bitRate,
 	                                              protLevel);
 
-	fprintf (stderr, "protection handler is %s\n",
-	                        shortForm ? "uep_protection" : "eep_protection");
+//	fprintf (stderr, "protection handler is %s\n",
+//	                        shortForm ? "uep_protection" : "eep_protection");
 	if (dabModus == DAB) 
 	   our_backendBase = new mp2Processor (bitRate,
 	                                        soundOut,
