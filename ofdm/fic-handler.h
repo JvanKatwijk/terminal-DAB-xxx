@@ -46,22 +46,12 @@ public:
 	                                 programname_t,
 	                                 fib_quality_t,
 	                                 void	*);
-		~ficHandler		(void);
+		~ficHandler		();
 	void	process_ficBlock	(std::vector<int16_t>, int16_t);
-	void	clearEnsemble		(void);
-	bool	syncReached		(void);
-	int16_t	get_ficRatio		(void);
-	std::string nameFor		(int32_t);
-	int32_t	SIdFor			(std::string &);
-	uint8_t	kindofService		(std::string &);
-	void	dataforDataService	(std::string &, packetdata *, int);
+	void	clearEnsemble		();
+	bool	syncReached		();
 	void	dataforAudioService	(std::string &, audiodata *, int);
-//
-//	additional functions for example 10
-        int32_t get_CIFcount            (void) const;
-        bool    has_CIFcount            (void) const;
-        void    reset                   (void);
-
+	void	reset			();
 private:
 	fib_processor	fibProcessor;
 	fib_quality_t	fib_qualityHandler;

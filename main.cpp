@@ -60,8 +60,11 @@ using std::endl;
 
 void    printOptions	();	// forward declaration
 void	listener	();
+void	printServices	();
 static
 std::atomic<uint8_t> serviceChange;
+static
+std::atomic<bool> showListing;
 
 static
 std::string	next_audioServiceName	(const std::string &s);
@@ -84,6 +87,9 @@ std::atomic<bool>timesyncSet;
 
 static
 std::atomic<bool>ensembleRecognized;
+
+static
+std::string ensembleName;
 
 static
 audioBase	*soundOut	= nullptr;
@@ -116,6 +122,7 @@ void	ensemblenameHandler (std::string name, int Id, void *userData) {
 	fprintf (stderr, "ensemble %s is (%X) recognized\n",
 	                          name. c_str (), (uint32_t)Id);
 	ensembleRecognized. store (true);
+	ensembleName = name;
 }
 
 
@@ -140,7 +147,7 @@ void	programnameHandler (std::string s, int SId, void *userdata) {
 
 static
 void	programdataHandler (audiodata *d, void *ctx) {
-	(void)ctx;
+	(void)d; (void)ctx;
 //	std::cerr << "\tstartaddress\t= " << d -> startAddr << "\n";
 //	std::cerr << "\tlength\t\t= "     << d -> length << "\n";
 //	std::cerr << "\tsubChId\t\t= "    << d -> subchId << "\n";
@@ -213,24 +220,21 @@ int	main (int argc, char **argv) {
 uint8_t		theMode		= 1;
 std::string	theChannel	= "11C";
 uint8_t		theBand		= BAND_III;
+bool		autogain	= false;
 #ifdef	HAVE_PLUTO
 int16_t		gain		= 60;
-bool		autogain	= false;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:QO:";
 #elif	HAVE_RTLSDR
 int16_t		gain		= 60;
-bool		autogain	= false;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:QO:";
 #elif	HAVE_SDRPLAY	
 int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
-bool		autogain	= true;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
 #elif	HAVE_AIRSPY
 int16_t		gain		= 20;
-bool		autogain	= false;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:p:bO:";
@@ -487,6 +491,7 @@ Mat img;
 
 	run. store (true);
 	serviceChange. store (0);
+	showListing. store (false);
 	std::thread keyboard_listener = std::thread (&listener);
 
 	while (run. load () && theDuration != 0) {
@@ -510,6 +515,10 @@ Mat img;
 	   while (run. load () && (theDuration != 0)) {
 	      if (theDuration > 0)
 	         theDuration --;
+	      if (showListing. load ()) {
+	         showListing. store (false);
+	         printServices ();
+	      }
 	      if (serviceChange. load () != 0) {
 	         if (serviceChange. load () == 1)
 	            serviceName = next_audioServiceName (serviceName);
@@ -557,9 +566,11 @@ void	listener	(void) {
 	   char t = getchar ();
 	   switch (t) {
 	      case '+': serviceChange. store (1);
-	        break;
+	         break;
 	      case '-': serviceChange. store (2);
-	        break;
+	         break;
+	      case 'L': showListing. store (true);
+	         break;
 	      default:
 	         break;
 	   }
@@ -637,7 +648,13 @@ std::string prev	= prevServiceName (serviceName);
 	return prev;
 }
 
-void    printOptions (void) {
+void	printServices	() {
+	fprintf (stderr, "Ensemble: %s\n", ensembleName. c_str ());
+	for (uint16_t i = 0; i < serviceNames. size (); i ++) 
+	   fprintf (stderr, "%s \n", serviceNames [i]. c_str ());
+}
+
+void    printOptions	() {
 	std::cerr << 
 "                          dab-cmdline options are\n"
 "	                  -C Channel\n"

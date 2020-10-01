@@ -137,7 +137,6 @@ int32_t	i;
 	if (blkno == 1) {
 	   index = 0;
 	   ficno = 0;
-	   fibProcessor. newFrame ();
 	}
 //
 	if ((1 <= blkno) && (blkno <= 3)) {
@@ -214,50 +213,14 @@ void	ficHandler::clearEnsemble (void) {
 	fibProtector. unlock ();
 }
 
-uint8_t	ficHandler::kindofService	(std::string &s) {
-uint8_t	result;
-	fibProtector. lock ();
-	result	= fibProcessor. kindofService (s);
-	fibProtector. unlock ();
-	return result;
-}
-
 void	ficHandler::dataforAudioService	(std::string &s, audiodata *d, int c) {
 	fibProtector. lock ();
 	fibProcessor. dataforAudioService (s, d, c);
 	fibProtector. unlock ();
 }
 
-void	ficHandler::dataforDataService	(std::string &s, packetdata *d, int c) {
-	fibProtector. lock ();
-	fibProcessor. dataforDataService (s, d, c);
-	fibProtector. unlock ();
-}
-
-int32_t ficHandler::get_CIFcount        (void) const {
-//	no lock, because using std::atomic<> in fib_processor class
-        return fibProcessor. get_CIFcount();
-}
-
-bool    ficHandler::has_CIFcount        (void) const {
-//	no lock, because using std::atomic<> in fib_processor class
-        return fibProcessor. has_CIFcount();
-}
-
-int16_t	ficHandler::get_ficRatio (void) {
-	return ficRatio;
-}
-
 bool	ficHandler::syncReached	(void) {
 	return fibProcessor. syncReached ();
-}
-
-std::string ficHandler::nameFor (int32_t serviceId) {
-	return fibProcessor. nameFor (serviceId);
-}
-
-int32_t	ficHandler::SIdFor	(std::string &name) {
-	return fibProcessor. SIdFor (name);
 }
 
 static	int 	pos	= 0;
@@ -273,7 +236,7 @@ void	ficHandler::show_ficCRC (bool b) {
 	}
 }
 
-void	ficHandler::reset	(void) {
+void	ficHandler::reset	() {
 	fibProcessor. reset ();
 }
 

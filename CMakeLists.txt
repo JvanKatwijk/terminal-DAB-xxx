@@ -291,7 +291,7 @@ endif ()
 	     ./ofdm/freq-interleaver.h
 	     ./ofdm/timesyncer.h
 	     ./ofdm/fic-handler.h
-	     ./ofdm/fib-processor.cpp
+	     ./ofdm/fib-processor.h
 	     ./ofdm/sample-reader.h
 	     ./backend/firecode-checker.h
 	     ./backend/backend-base.h
