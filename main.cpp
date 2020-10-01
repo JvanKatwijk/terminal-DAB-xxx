@@ -579,7 +579,7 @@ const char *ss2 = s2. c_str ();
 	return *ss2 == 0;
 }
 
-std::string	nextServiceName	(const std::string &s) {
+std::string	nextServiceName	(const std::string &serviceName) {
 uint16_t	i;
 int16_t	foundIndex	= -1;
 
@@ -601,7 +601,7 @@ int16_t	foundIndex	= -1;
 	return serviceNames [foundIndex];
 }
 
-std::string	prevServiceName	(const std::string &s) {
+std::string	prevServiceName	(const std::string &serviceName) {
 uint16_t	i;
 int16_t	foundIndex	= -1;
 
