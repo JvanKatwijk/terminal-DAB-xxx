@@ -4,20 +4,20 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline-2
+ *    This file is part of the dab-xxx-cli
  *
- *    dab-cmdline-2 is free software; you can redistribute it and/or modify
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline-2 is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline-2; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -254,7 +254,7 @@ RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
 std::string image_path;
 Mat img;
 #endif
-	std::cerr << "dab_cmdline example,\n \
+	std::cerr << "dab_xxx-cli,\n \
 	                Copyright 2020 J van Katwijk, Lazy Chair Computing\n";
 	timeSynced.	store (false);
 	timesyncSet.	store (false);

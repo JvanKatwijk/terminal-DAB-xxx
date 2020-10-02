@@ -4,7 +4,7 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline-2
+ *    This file is part of the dab-xxx-cli
  *
  *    dab-cmdline-2 is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -57,10 +57,23 @@ using namespace cv;
 #include	<codecvt>
 #include	<atomic>
 #include	<string>
+#include	<queue>
 using std::cerr;
 using std::endl;
 
 //
+//	messages
+//	   newService	string
+//	   newTime	string
+//	   newPicture	string
+	typedef struct {
+	   int key;
+	   std::string string;
+	} message;
+	std::queue<message> messageQueue;
+#define	S_SERVICE_CHANGE	0100
+#define	S_NEW_TIME		0101
+#define	S_NEW_PICTURE		0102
 //	some offsets 
 #define	ENSEMBLE_ROW	4
 #define	ENSEMBLE_COLUMN	4
@@ -72,15 +85,10 @@ void    printOptions	();	// forward declaration
 void	listener	();
 void	printServices	();
 static
-std::atomic<int8_t> serviceChange;
-static
 int		index_currentService;
 static
-std::atomic<bool>	newTime;
-static
-std::string	the_newTime;
-static
 int		indexFor		(const std::string &s);
+//
 //	we deal with callbacks from different threads. So, if you extend
 //	the functions, take care and add locking whenever needed
 static
@@ -123,8 +131,10 @@ void	syncsignalHandler (bool b, void *userData) {
 
 static
 void	timeHandler	(std::string theTime, void *userData) {
-	the_newTime	= theTime;
-	newTime. store (true);
+message m;
+	m. key		= S_NEW_TIME;
+	m. string	= theTime;
+	messageQueue. push (m);
 }
 
 void	writeMessage (int row, int column, const char *message) {
@@ -204,21 +214,17 @@ uint16_t i;
 }
 
 #ifdef	__SHOW_PICTURES__
-static
-std::string	thePicture;
-static
-std::atomic<bool> newPicture;
-//
 //	The function is called from the MOT handler, with
 //	as parameters the filename where the picture is stored
 //	d denotes the subtype of the picture 
 //	typedef void (*motdata_t)(std::string, int, void *);
 void	motdataHandler (std::string s, int d, void *ctx) {
 	(void)d; (void)ctx;
-	thePicture	= s;
-	newPicture. store (true);
+	message m;
+	m. key		= S_NEW_PICTURE;
+	m. string	= s;
+	messageQueue. push (m);
 }
-
 #else
 void	motdataHandler (std::string s, int d, void *ctx) {
 	(void)s; (void)d; (void)ctx;
@@ -529,15 +535,16 @@ Mat img;
 	   sleep (1);
 	   theRadio	-> stop ();
 	   delete theDevice;
+	   delete soundOut;
+	   endwin ();
 	   exit (22);
 	}
+
 	writeMessage (0, 0, "                                    ");
 	writeMessage (0, 10, "DAB command line decoder    ");
 	writeMessage (1, 1, "Use up and down arrow keys to scan throught the services");
-	writeMessage (2, 1, "acknowlegde selection by space or return, q is quit");
+	writeMessage (2, 1, "acknowledge selection by space or return, q is quit");
 	run. store (true);
-	serviceChange. store (-1);
-	newTime. store (0);
 	std::thread keyboard_listener = std::thread (&listener);
 
 	sleep (5);
@@ -573,46 +580,85 @@ Mat img;
 	   currentService	= ad. serviceName;
 	   theRadio	-> reset_msc ();
 	   theRadio	-> set_audioChannel (&ad);
-//
+
+	   bool		breaker	= false;
 //	This polling loop is run while the service plays
 	   while (run. load () && (theDuration != 0)) {
 	      if (theDuration > 0)
 	         theDuration --;
-	      if (serviceChange. load () != -1) {
-	         currentService = serviceNames [serviceChange. load ()];
-	         serviceChange. store (-1);
-	         if (!img. empty ())
-	            destroyAllWindows ();
-	         break;
-	      }
-	      if (newTime. load ()) {
-	         writeMessage (ENSEMBLE_ROW,
-	                       PLAYING_COLUMN + 30, the_newTime. c_str ());
-	         newTime. store (false);
-	      }
-	                  
-	   
+
+	      if (!messageQueue. empty ()) {
+	         message m = messageQueue. front ();
+	         switch (m. key) {
+	            case S_SERVICE_CHANGE:
+	               currentService = m. string;
+	               if (!img. empty ())
+	                  destroyAllWindows ();
+	               breaker = true;
+	               break;
+	            case S_NEW_TIME:
+	               writeMessage (ENSEMBLE_ROW,
+	                       PLAYING_COLUMN + 30, m. string. c_str ());
+	               break;
 #ifdef	__SHOW_PICTURES__
-	      if (newPicture. load ()) {
-	         newPicture. store (false);
-	         image_path	= samples::findFile (thePicture);
-	         destroyAllWindows ();
-	         img		= imread (image_path, IMREAD_COLOR);
-	         if (!img. empty ()) {
-	            imshow (image_path, img);
-	            char c = waitKey (1000);
-	            if (c != -1)
-	               fprintf (stderr, "key was %d\n", c);
-	            if (c == '\n') 
-	              serviceChange. store (-1);
+	            case S_NEW_PICTURE:
+	               image_path = samples::findFile (m. string);
+	               destroyAllWindows ();
+	               img	= imread (image_path, IMREAD_COLOR);
+	               if (!img. empty ()) {
+	                  imshow (image_path, img);
+	                  (void)waitKey (1000);
+//	                  if (c != -1)
+//	                     fprintf (stderr, "key was %d\n", c);
+	               }
+	               break;
+	#endif
+	            default:
+	               break;
 	         }
-	         else
-	            sleep (1);
+	         messageQueue. pop ();
+	         if (breaker)
+	            break;
 	      }
 	      else
-#endif
 	         sleep (1);
 	   }
+
+//	      if (serviceChange. load () != -1) {
+//	         currentService = serviceNames [serviceChange. load ()];
+//	         serviceChange. store (-1);
+//	         if (!img. empty ())
+//	            destroyAllWindows ();
+//	         break;
+//	      }
+//	      if (newTime. load ()) {
+//	         writeMessage (ENSEMBLE_ROW,
+//	                       PLAYING_COLUMN + 30, the_newTime. c_str ());
+//	         newTime. store (false);
+//	      }
+//	                  
+//	   
+//#ifdef	__SHOW_PICTURES__
+//	      if (newPicture. load ()) {
+//	         newPicture. store (false);
+//	         image_path	= samples::findFile (thePicture);
+//	         destroyAllWindows ();
+//	         img		= imread (image_path, IMREAD_COLOR);
+//	         if (!img. empty ()) {
+//	            imshow (image_path, img);
+//	            char c = waitKey (1000);
+//	            if (c != -1)
+//	               fprintf (stderr, "key was %d\n", c);
+//	            if (c == '\n') 
+//	              serviceChange. store (-1);
+//	         }
+//	         else
+//	            sleep (1);
+//	      }
+//	      else
+//#endif
+//	         sleep (1);
+//	   }
 	}
 	theRadio	-> stop ();
 	theDevice	-> stopReader ();
@@ -624,38 +670,37 @@ Mat img;
 static
 int listenerState	= 0;
 
-bool	serviceChanged	= false;
 void	listener	(void) {
+message m;
 	while (run. load ()) {
 	   char t = getchar ();
 	   switch (t) {
-	      case '+':
-	         writeMessage (SERVICE_ROW + index_currentService,
-	                               DOT_COLUMN, " ");
-	         index_currentService = (index_currentService -1 +
-	                                 serviceNames. size ()) %
-	                                      serviceNames. size ();
-	         writeMessage (SERVICE_ROW + index_currentService, 
-	                               DOT_COLUMN, "*");
-	         serviceChanged = true;
-	         listenerState = 0;
-	         break;
-	      case '-':
-	         writeMessage (5 + index_currentService, 8, " ");
-	         index_currentService = (index_currentService + 1 +
-	                                    serviceNames. size ()) %
-	                                      serviceNames. size ();
-	         writeMessage (5 + index_currentService, 8, "*");
-	         serviceChanged = true;
-	         listenerState = 0;
-	         break;
 	      case 'q':
 	         run.store (false);
 	         listenerState = 0;
 	         break;
+	      case '+':
+	         writeMessage (SERVICE_ROW + index_currentService,
+	                                             DOT_COLUMN, " ");
+	         index_currentService = (index_currentService + 1 +
+	                                             serviceNames. size ()) %
+	                                      serviceNames. size ();
+	         writeMessage (SERVICE_ROW + index_currentService, 
+	                                             DOT_COLUMN, "*");
+	         listenerState = 3;
+	         break;
+	      case '-':
+	         writeMessage (SERVICE_ROW + index_currentService,
+	                                             DOT_COLUMN, " ");
+	         index_currentService = (index_currentService - 1 +
+	                                            serviceNames. size ()) %
+	                                      serviceNames. size ();
+	         writeMessage (SERVICE_ROW + index_currentService,
+	                                             DOT_COLUMN, "*");
+	         listenerState = 3;
+	         break;
 	      case 0x1b:
-	         if (listenerState == 0)
-	            listenerState = 1;
+	         listenerState = 1;
 	         break;
 	      case 0x5b:
 	         if (listenerState == 1)
@@ -670,8 +715,7 @@ void	listener	(void) {
 	                                      serviceNames. size ();
 	            writeMessage (SERVICE_ROW + index_currentService,
 	                                DOT_COLUMN, "*");
-	            serviceChanged = true;
-	            listenerState = 0;
+	            listenerState = 3;
 	         }
 	         break;
 	      case 0x42:
@@ -683,8 +727,7 @@ void	listener	(void) {
 	                                      serviceNames. size ();
 	            writeMessage (SERVICE_ROW + index_currentService,
 	                                 DOT_COLUMN, "*");
-	            serviceChanged = true;
-	           listenerState = 0;
+	            listenerState = 3;
 	         }
 	         break;
 	      case 'r':
@@ -692,10 +735,12 @@ void	listener	(void) {
 	      case '\t':
 	      case 012:
 	      case 015:
-	         if (serviceChanged) {
-	            serviceChange. store (index_currentService);
-	            serviceChanged = false;
+	         if (listenerState == 3) {
+	            m. key = S_SERVICE_CHANGE;
+	            m. string = serviceNames [index_currentService];
+	            messageQueue. push (m);
 	         }
+	         listenerState	= 0;
 	         break;
 
 	      default:
