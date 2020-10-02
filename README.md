@@ -21,12 +21,18 @@ the omission of the ability to select another service was hindering the use.
 Two versions - merely differencing in the "main" control program
 are here.
 
-	a. one version similar to example 5 of the "dab-cmdline" examples, i.e. a command line version, with the ability to select the "next" and "previous" service from the list (use "+" for next, and "-" for previous, followed by a return);
+	a. one version similar to example 5 of the "dab-cmdline" examples,
+	   i.e. a command line version, with the ability to select the
+	   "next" and "previous" service from the list
+	   (use "+" for next, and "-" for previous, followed by a return);
 
-	b. the second version goes one step further. Using the curses library the list of services remains visible. In the list the currently playing service
-is marked and with the "up" and "down" arrows one can move the selection along
-the list (an acknowledgment with the return or space key instructs the
-software to start the new selection).
+	b. the second version goes one step further.
+	   Using the curses library the list of services remains visible.
+	   In the list the currently playing service
+           is marked and with the "up" and "down" arrows one can move
+	   the selection along the list (an acknowledgment with the
+	   return or space key instructs the software to start the
+	   new selection).
 
 While doing so, I also wanted to see the station slide(s) on my screen,
 therefore, new is a configuration option to implement showing
