@@ -32,27 +32,10 @@
 //
 #include	<stdint.h>
 //
-//	This struct (a pointer to) is returned by callbacks of the type
-//	programdata_t. It contains parameters, describing the service.
-typedef struct {
-	bool	defined;
-	int16_t subchId;
-	int16_t	startAddr;
-	bool	shortForm;	// false EEP long form
-	int16_t	protLevel;	// 
-	int16_t DSCTy;
-	int16_t	length;
-	int16_t	bitRate;
-	int16_t	FEC_scheme;
-	int16_t	DGflag;
-	int16_t	packetAddress;
-	int16_t	appType;
-	bool	is_madePublic;
-} packetdata;
-
 //
 typedef	struct {
 	bool	defined;
+	std::string	serviceName;
 	int16_t	subchId;
 	int16_t	startAddr;
 	bool	shortForm;
@@ -181,7 +164,7 @@ bool	is_audioService		(void *, const char *);
 //
 //	is_dataService will return true id the main service with the
 //	name is a dataservice
-bool	is_dataService		(void *, const char *);
+//bool	is_dataService		(void *, const char *);
 //
 //	dataforAudioService will search for the audiodata of the i-th
 //	(sub)service with the name as given. If no such service exists,
@@ -191,7 +174,7 @@ void	dataforAudioService	(void *, const char *, audiodata *, int);
 //	dataforDataService will search for the packetdata of the i-th
 //	(sub)service with the name as given. If no such service exists,
 //	the "defined" bit in the struct will be set to false;
-void	dataforDataService	(void *, const char *, packetdata *, int);
+//void	dataforDataService	(void *, const char *, packetdata *, int);
 //
 //	set-audioChannel will add - if properly defined - a handler
 //	for handling the audiodata as described in the parameter
@@ -201,13 +184,13 @@ void	set_audioChannel	(void *, audiodata *);
 //	set-dataChannel will add - if properly defined - a handler
 //	for handling the packetdata as described in the parameter
 //	to the list of active handlers
-void	set_dataChannel		(void *, packetdata *);
+//void	set_dataChannel		(void *, packetdata *);
 //
 //	mapping from a name to a Service identifier is done 
-int32_t dab_getSId		(void *, const char*);
+//int32_t dab_getSId		(void *, const char*);
 //
 //	and the other way around, mapping the service identifier to a name
-void	dab_getserviceName	(void *, int32_t, char *);
+//void	dab_getserviceName	(void *, int32_t, char *);
 }
 #endif
 

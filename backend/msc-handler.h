@@ -56,7 +56,7 @@ public:
 	void		process_mscBlock	(std::complex<float> *,
 	                                                     int16_t);
 	void		set_audioChannel	(audiodata	*);
-	void		set_dataChannel		(packetdata     *);
+//	void		set_dataChannel		(packetdata     *);
 	void		reset			(void);
 	void		stop			(void);
 	void		start			(void);

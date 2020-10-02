@@ -508,6 +508,7 @@ Mat img;
 	      exit (22);
 	   }
 
+	   serviceName	= ad. serviceName;
 	   theRadio	-> reset_msc ();
 	   theRadio	-> set_audioChannel (&ad);
 //

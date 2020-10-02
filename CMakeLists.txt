@@ -1,5 +1,5 @@
 cmake_minimum_required( VERSION 2.8.11 )
-set (objectName dab_cmdline-p)
+set (objectName dab_cli)
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -flto")
 #set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11  -pg")
@@ -32,6 +32,7 @@ OPTION(SDRPLAY  "Input: SDRPlay"  OFF)
 OPTION(AIRSPY   "Input: AirSpy"   OFF)
 OPTION(PLUTO	"Input: PLUTO"	  OFF)
 OPTION(RTLSDR	"Input: RTLSDR"	  OFF)
+OPTION(CURSES	"ncurses"         ON)
 OPTION(PICTURES "show Slides"     ON)
 OPTION(X64_DEFINED "optimize for x64/SSE"  OFF)
 OPTION(RPI_DEFINED "optimize for ARM/NEON" OFF)
@@ -48,10 +49,14 @@ if(PICTURES)
    set (PICTURES true)
 endif ()
 
+if(CURSES)
+   set (CURSES true)
+endif ()
+
 if(SDRPLAY)
    if (objectName STREQUAL "")
       set(SDRPLAY ON)
-      set(objectName dab-cmdline-sdrplay)
+      set(objectName dab-sdrplay-cli)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -60,7 +65,7 @@ endif ()
 if(AIRSPY)
    if (objectName STREQUAL "")
       set(AIRSPY ON)
-      set(objectName dab-cmdline-airspy)
+      set(objectName dab-airspy-cli)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -69,7 +74,7 @@ endif ()
 if(PLUTO)
    if (objectName STREQUAL "")
       set(PLUTOSDR ON)
-      set(objectName dab-cmdline-pluto)
+      set(objectName dab-pluto-cli)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -78,7 +83,7 @@ endif ()
 if(RTLSDR)
    if (objectName STREQUAL "")
       set(RTLSDR ON)
-      set(objectName dab-cmdline-rtlsdr)
+      set(objectName dab-rtlsdr-cli)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -94,6 +99,12 @@ endif ()
 	   add_definitions (-D__SHOW_PICTURES__)
 	endif ()
 
+	if (CURSES)
+	   find_package (Curses REQUIRED)
+	   include_directories (${CURSES_INCLUDE_DIR})
+	   list (APPEND extraLisb ${CURSES_LIBRARIES})
+	endif ()
+
         find_package(FFTW3f)
         if (NOT FFTW3F_FOUND)
             message(FATAL_ERROR "please install FFTW3")
@@ -103,7 +114,6 @@ endif ()
         if (NOT FAAD_FOUND )
             message(FATAL_ERROR "please install libfaad")
         endif ()
-
 
 	find_package(LibSndFile)
 	if (NOT LIBSNDFILE_FOUND)
@@ -321,9 +331,19 @@ endif ()
 	     ./support/viterbi-spiral/viterbi-spiral.h
 	)
 
+	if (CURSES)
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	        ./main-curses.cpp
+	   )
+	else ()
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	         ./main-regular.cpp
+	   )
+	endif ()
 	set (${objectName}_SRCS
 	     ${${objectName}_SRCS}
-	     ./main.cpp
 	     ./audio-sink/audio-base.cpp
 	     ./audio-sink/audiosink.cpp
 	     ./audio-sink/filesink.cpp
@@ -420,6 +440,7 @@ endif ()
 	                       ${FFTW3F_LIBRARIES}
 	                       ${extraLibs}
 	                       ${FAAD_LIBRARIES}
+	                       -lcurses
 	                       ${CMAKE_DL_LIBS}
 	)
 

@@ -104,9 +104,7 @@ public:
 	int32_t	SIdFor			(std::string &);
 	uint8_t	kindofService		(std::string &);
 	void	dataforAudioService	(std::string &, audiodata *);
-	void	dataforDataService	(std::string &, packetdata *);
 	void	dataforAudioService	(std::string &, audiodata *, int16_t);
-	void	dataforDataService	(std::string &, packetdata *, int16_t);
 
 	void	reset			();
 	int32_t get_CIFcount            (void) const;

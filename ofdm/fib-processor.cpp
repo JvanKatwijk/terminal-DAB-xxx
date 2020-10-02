@@ -765,6 +765,7 @@ serviceId *selectedService;
 	      continue;
 
 	   subchId		= ServiceComps [j]. subchannelId;
+	   d	-> serviceName	= selectedService -> serviceLabel. label;
 	   d	-> subchId	= subchId;
 	   d	-> startAddr	= subChannels [subchId]. StartAddr;
 	   d	-> shortForm	= subChannels [subchId]. shortForm;

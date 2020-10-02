@@ -183,9 +183,9 @@ void	mscHandler::set_audioChannel (audiodata *d) {
 
 //
 //	Not used here
-void	mscHandler::set_dataChannel (packetdata *d) {
-	(void)d;
-}
+//void	mscHandler::set_dataChannel (packetdata *d) {
+//	(void)d;
+//}
 
 void	mscHandler::process_mscBlock	(std::vector<int16_t> fbits,
 	                                 int16_t blkno) { 
