@@ -1,7 +1,7 @@
 
 -------------------------------------------------------------------------
 dab-xxx-cli:
-two command line versions of a dab decoder  (with slides)
+two command line versions of a dab decoder  (with slides and service selection)
 -------------------------------------------------------------------------
 
 ![dab-cmdline](/dab-cli-curses.png?raw=true)
@@ -29,7 +29,7 @@ are here.
 	b. the second version goes one step further.
 	   Using the curses library the list of services remains visible.
 	   In the list the currently playing service
-           is marked and with the "up" and "down" arrows one can move
+	   is marked and with the "up" and "down" arrows one can move
 	   the selection along the list (an acknowledgment with the
 	   return or space key instructs the software to start the
 	   new selection).
@@ -60,6 +60,10 @@ where
 
 For other parameters, see the output of the program
 
+If running the "regular" version, specifying a service name is required,
+if running the "curses" version, if no service name is specified, the
+first element of the (alfabetically sorted) list is taken.
+
 -------------------------------------------------------------------------
 Supported devices
 -------------------------------------------------------------------------
@@ -78,23 +82,31 @@ Currently, the following devices are supported
 Building an executable
 --------------------------------------------------------------------------
 
-Libraries needed (both the libraries and the development packages):
+Load the libraries, e.g. for Debian (Ubuntu) systems
 
-	a. FFTWf
 
-	b. libfaad
+	sudo apt-get update
+	sudo apt-get install git cmake
+	sudo apt-get install build-essential g++
+	sudo apt-get install pkg-config
+	sudo apt-get install libsndfile1-dev
+	sudo apt-get install libfftw3-dev
+	sudo apt-get instakk portaudio19-dev 
+	sudo apt-get install zlib1g-dev 
+	sudo apt-get install libusb-1.0-0-dev
+	sudo apt-get install libsamplerate0-dev
+	sudo apt-get install libfaad-dev
 
-	c. sndFile
-
-	d. libsamplerate
+Note that Ubuntu 20.04 repositories provide as default an incompatible libfaad,
+libfaad-2.8 is the correct version.
 
 For showing slides one has to install
 
-	e. opencv
+	sudo apt-get install opencv-dev
 
 For runnig the curses version one has to install
 
-	f. curses 
+	sudo apt-get install curses
 
 Of course, the support library for the device of choice need to
 be installed as well.
@@ -103,10 +115,15 @@ if all libraries are installed, the process is simple,
 
 	mkdir build
 	cd build
-	cmake .. -DXXX=ON -DYYY=ON -DZZZ=ON
+	cmake .. -DXXX=ON [-DYYY=OFF] [-DZZZ=OFF]
 	make
+	sudo make install
 
-Note that if no device is selected, the SDRplay is selected as default.
+A device name should be passed as parameter, e.g. -DRTLSDR=ON or
+-DSDRPLAY=ON.
+
+The result is an executable dab-XXX-cli, where XXX is the name
+of the device.
 
 By default, the dab-xxx-cli with curses support is selected,
 use
@@ -115,14 +132,18 @@ use
 
 to deselect.
 
+By default, the dab-xxx-cli with opencv is selected. Use
+
+	-DPICTURES=OFF
+
+to deselect.
+
 When compiling on/for Linux on an X64, one might use
 
 	-DX64_DEFINED=ON
 
-The default in the CMakeLists.txt file is that "Pictures" are compiled in.
-Switching it off by the command line is
-
-	-DPICTURES=OFF
+as additional parameter. The option allows generation of 
+archtecture-specific  code for the deconvolution.
 
 -------------------------------------------------------------------------
 Copyrights
