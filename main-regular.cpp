@@ -440,6 +440,7 @@ Mat img;
 	                                    systemData,
 	                                    ensemblenameHandler,
 	                                    programnameHandler,
+	                                    nullptr,
 	                                    fibQuality,
 	                                    pcmHandler,
 	                                    dataOut_Handler,

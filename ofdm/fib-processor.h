@@ -93,6 +93,7 @@ class	fib_processor {
 public:
 		fib_processor		(ensemblename_t,
 	                                 programname_t,
+	                                 theTime_t,
 	                                 void	*);
 		~fib_processor		(void);
 	void	process_FIB		(uint8_t *, uint16_t);
@@ -100,31 +101,23 @@ public:
 	void	setupforNewFrame	(void);
 	void	clearEnsemble		(void);
 	bool	syncReached		(void);
-	std::string nameFor		(int32_t);
-	int32_t	SIdFor			(std::string &);
-	uint8_t	kindofService		(std::string &);
 	void	dataforAudioService	(std::string &, audiodata *);
 	void	dataforAudioService	(std::string &, audiodata *, int16_t);
 
 	void	reset			();
-	int32_t get_CIFcount            (void) const;
-        bool    has_CIFcount            (void) const;
-        void    newFrame                (void);
 
 private:
 	ensemblename_t	ensemblenameHandler;
 	programname_t	programnameHandler;
+	theTime_t	timeHandler;
 	void		*userData;
+	int32_t		dateTime [8];
 	serviceId	*findServiceId (int32_t);
-	serviceComponent *find_packetComponent (int16_t);
 	serviceComponent *find_serviceComponent (int32_t SId, int16_t SCId);
 	serviceId	*findServiceId	(std::string);
         void            bind_audioService (int8_t,
                                            uint32_t, int16_t,
                                            int16_t, int16_t, int16_t);
-        void            bind_packetService (int8_t,
-                                            uint32_t, int16_t,
-                                            int16_t, int16_t, int16_t);
 	void		process_FIG0		(uint8_t *);
 	void		process_FIG1		(uint8_t *);
 	void		FIG0Extension0		(uint8_t *);
@@ -132,6 +125,8 @@ private:
 	void		FIG0Extension2		(uint8_t *);
 	void		FIG0Extension5		(uint8_t *);
 	void		FIG0Extension6		(uint8_t *);
+	void		FIG0Extension9		(uint8_t *);
+	void		FIG0Extension10		(uint8_t *);
         void            FIG0Extension17         (uint8_t *);
 
 	int16_t		HandleFIG0Extension1	(uint8_t *,
@@ -143,7 +138,6 @@ private:
 	                                         int16_t, uint8_t);
 	int16_t		HandleFIG0Extension13	(uint8_t *,
 	                                         int16_t, uint8_t);
-	int32_t		dateTime	[8];
 	channelMap	subChannels [64];
 	serviceComponent	ServiceComps [64];
 	serviceId	listofServices [64];

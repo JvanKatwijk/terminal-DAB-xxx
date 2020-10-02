@@ -44,6 +44,7 @@ public:
 		ficHandler		(uint8_t,	// dabMode
 	                                 ensemblename_t,
 	                                 programname_t,
+	                                 theTime_t,
 	                                 fib_quality_t,
 	                                 void	*);
 		~ficHandler		();

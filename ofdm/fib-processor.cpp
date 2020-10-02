@@ -98,13 +98,15 @@
 //
 	fib_processor::fib_processor (ensemblename_t ensemblenameHandler,
 	                              programname_t  programnameHandler,
+	                              theTime_t	     timeHandler,
 	                              void	*userData) {
 	this	-> ensemblenameHandler	= ensemblenameHandler;
 	if (programnameHandler == nullptr)
 	   fprintf (stderr, "nullptr detected\n");
 	this	-> programnameHandler	= programnameHandler;
+	this	-> timeHandler		= timeHandler;
 	this	-> userData		= userData;
-
+	memset (dateTime, 0, sizeof (dateTime));
 	reset	();
 }
 	
@@ -192,9 +194,11 @@ uint8_t	extension	= getBits_5 (d, 8 + 3);
 	      break;
 
 	   case 9:
+	      FIG0Extension9 (d);
 	      break;
 
 	   case 10:
+	      FIG0Extension10 (d);
 	      break;
 
 	   case 11:
@@ -813,3 +817,140 @@ void	fib_processor::reset	(void) {
 	hasCIFcount	= false;
 }
 
+/////////////////////////////////////////////////////////////////////////////
+//
+//	Country, LTO & international table 8.1.3.2
+void fib_processor::FIG0Extension9 (uint8_t *d) {
+int16_t	offset	= 16;
+uint8_t ecc;
+//
+//	6 indicates the number of hours
+	int	signbit = getBits_1 (d, offset + 2);
+	dateTime [6] = (signbit == 1)?
+	                -1 * getBits_4 (d, offset + 3):
+	                     getBits_4 (d, offset + 3);
+//
+//	7 indicates a possible remaining half our
+	dateTime [7] = (getBits_1 (d, offset + 7) == 1) ? 30 : 0;
+	if (signbit == 1)
+	   dateTime [7] = -dateTime [7];
+}
+
+std::string monthTable [] = {
+"jan", "feb", "mar", "apr", "may", "jun",
+"jul", "aug", "sep", "oct", "nov", "dec"};
+
+int	monthLength [] {
+31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+//
+//	Time in 10 is given in UTC, for other time zones
+//	we add (or subtract) a number of Hours (half hours)
+void	adjustTime (int32_t *dateTime) {
+//	first adjust the half hour  in the amount of minutes
+	dateTime [4] += (dateTime [7] == 1) ? 30 : 0;
+	if (dateTime [4] >= 60) {
+	   dateTime [4] -= 60; dateTime [3] ++;
+	}
+
+	if (dateTime [4] < 0) {
+	   dateTime [4] += 60; dateTime [3] --;
+	}
+
+	dateTime [3] += dateTime [6];
+	if ((0 <= dateTime [3]) && (dateTime [3] <= 23))
+	   return;
+
+	if (dateTime [3] > 23) {
+	   dateTime [3] -= 24; dateTime [2] ++;
+	}
+
+	if (dateTime [3] < 0) {
+	   dateTime [3] += 24; dateTime [2] --;
+	}
+
+	if (dateTime [2] > monthLength [dateTime [1] - 1]) {
+	   dateTime [2] = 1; dateTime [1] ++;
+	   if (dateTime [1] > 12) {
+	      dateTime [1] = 1;
+	      dateTime [0] ++;
+	   }
+	}
+
+	if (dateTime [2] < 0) {
+	   if (dateTime [1] > 1) {
+	      dateTime [2] = monthLength [dateTime [1] - 1 - 1];
+	      dateTime [1] --;
+	   }
+	   else {
+	      dateTime [2] = monthLength [11];
+	      dateTime [1] = 12; dateTime [0] --;
+	   }
+	}
+}
+
+std::string	mapTime (int32_t *dateTime) {
+std::string result;
+	int hours	= dateTime [3];
+	if (hours < 0)	hours += 24;
+	if (hours >= 24) hours -= 24;
+
+	std::string hoursasString = std::to_string (hours); 
+	result. append (hoursasString);
+	result. append (":");
+	std::string minutesasString = std::to_string (dateTime [4]);
+	result. append (minutesasString);
+	return result;
+}
+//
+//	Date and Time
+//	FIG0/10 are copied from the work of
+//	Michael Hoehn
+void fib_processor::FIG0Extension10 (uint8_t *dd) {
+int16_t		offset = 16;
+int32_t		mjd	= getLBits (dd, offset + 1, 17);
+//	Modified Julian Date (recompute according to wikipedia)
+int32_t J	= mjd + 2400001;
+int32_t j	= J + 32044;
+int32_t g	= j / 146097; 
+int32_t	dg	= j % 146097;
+int32_t c	= ((dg / 36524) + 1) * 3 / 4; 
+int32_t dc	= dg - c * 36524;
+int32_t b	= dc / 1461;
+int32_t db	= dc % 1461;
+int32_t a	= ((db / 365) + 1) * 3 / 4; 
+int32_t da	= db - a * 365;
+int32_t y	= g * 400 + c * 100 + b * 4 + a;
+int32_t m	= ((da * 5 + 308) / 153) - 2;
+int32_t d	= da - ((m + 4) * 153 / 5) + 122;
+int32_t Y	= y - 4800 + ((m + 2) / 12); 
+int32_t M	= ((m + 2) % 12) + 1; 
+int32_t D	= d + 1;
+int32_t	theTime	[6];
+
+	theTime [0] = Y;	// Year
+	theTime [1] = M;	// Month
+	theTime [2] = D;	// Day
+	theTime [3] = getBits_5 (dd, offset + 21); // Hours
+	theTime [4] = getBits_6 (dd, offset + 26); // Minutes
+
+	if (getBits_6 (dd, offset + 26) != dateTime [4]) 
+	   theTime [5] =  0;	// Seconds (Ubergang abfangen)
+
+	if (dd [offset + 20] == 1)
+	   theTime [5] = getBits_6 (dd, offset + 32);	// Seconds
+//
+//	take care of different time zones
+	bool	change = false;
+	for (int i = 0; i < 5; i ++) {
+	   if (theTime [i] != dateTime [i])
+	      change = true;
+	   dateTime [i] = theTime [i];
+	}
+
+	if (change) {
+	   adjustTime (dateTime);
+	   std::string timeString = mapTime (dateTime);
+	   if (timeHandler != nullptr)
+	      timeHandler (timeString, userData);
+	}
+}

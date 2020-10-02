@@ -64,6 +64,7 @@ using std::endl;
 //	some offsets 
 #define	ENSEMBLE_ROW	4
 #define	ENSEMBLE_COLUMN	4
+#define	PLAYING_COLUMN	(ENSEMBLE_COLUMN + 16 + 2)
 #define	SERVICE_ROW	(ENSEMBLE_ROW + 1)
 #define	SERVICE_COLUMN	10
 #define	DOT_COLUMN	(SERVICE_COLUMN - 2)
@@ -74,6 +75,10 @@ static
 std::atomic<int8_t> serviceChange;
 static
 int		index_currentService;
+static
+std::atomic<bool>	newTime;
+static
+std::string	the_newTime;
 static
 int		indexFor		(const std::string &s);
 //	we deal with callbacks from different threads. So, if you extend
@@ -114,6 +119,12 @@ void	syncsignalHandler (bool b, void *userData) {
 	timeSynced. store (b);
 	timesyncSet. store (true);
 	(void)userData;
+}
+
+static
+void	timeHandler	(std::string theTime, void *userData) {
+	the_newTime	= theTime;
+	newTime. store (true);
 }
 
 void	writeMessage (int row, int column, const char *message) {
@@ -468,6 +479,7 @@ Mat img;
 	                                    systemData,
 	                                    ensemblenameHandler,
 	                                    programnameHandler,
+		                            timeHandler,
 	                                    fibQuality,
 	                                    pcmHandler,
 	                                    dataOut_Handler,
@@ -525,6 +537,7 @@ Mat img;
 	writeMessage (2, 1, "acknowlegde selection by space or return, q is quit");
 	run. store (true);
 	serviceChange. store (-1);
+	newTime. store (0);
 	std::thread keyboard_listener = std::thread (&listener);
 
 	sleep (5);
@@ -545,7 +558,7 @@ Mat img;
 	while (run. load () && theDuration != 0) {
 	   char text [255];
 	   sprintf (text, "now playing %s", currentService. c_str ());
-	   writeMessage (ENSEMBLE_ROW, 30, text);
+	   writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text);
 	   audiodata ad;
 	   theRadio -> dataforAudioService (currentService. c_str (), &ad);
 	   if (!ad. defined) {
@@ -572,6 +585,12 @@ Mat img;
 	            destroyAllWindows ();
 	         break;
 	      }
+	      if (newTime. load ()) {
+	         writeMessage (ENSEMBLE_ROW,
+	                       PLAYING_COLUMN + 30, the_newTime. c_str ());
+	         newTime. store (false);
+	      }
+	                  
 	   
 #ifdef	__SHOW_PICTURES__
 	      if (newPicture. load ()) {

@@ -43,12 +43,14 @@
 		ficHandler::ficHandler (uint8_t	dabMode,
 	                                ensemblename_t ensemblenameHandler,
 	                                programname_t  programnameHandler,
+	                                theTime_t	timeHandler,
 	                                fib_quality_t fib_qualityHandler,
 	                                void		*userData):
 	                                      viterbiSpiral (768),
 //	                                      viterbiHandler (768),
 	                                      fibProcessor (ensemblenameHandler,
 	                                                    programnameHandler,
+	                                                    timeHandler,
 	                                                    userData),
 	                                                    params (dabMode) {
 int16_t	i, j, k;
