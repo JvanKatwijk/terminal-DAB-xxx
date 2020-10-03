@@ -50,54 +50,11 @@
 //
 #include	"charsets.h"
 #include	"pad-handler.h"
+#include	"bitWriter.h"
 
 #include	<stdlib.h>
 #include	<stdint.h>
 #include	<vector>
-
-class BitWriter {
-private:
-        std::vector<uint8_t> data;
-        size_t byte_bits;
-public:
-        BitWriter() {Reset();}
-
-void	Reset () {
-	data.clear();
-	byte_bits = 0;
-}
-
-void	AddBits (int data_new, size_t count) {
-	while (count > 0) {
-//	add new byte, if needed
-	   if (byte_bits == 0)
-	      data.push_back (0x00);
-
-	   size_t copy_bits = std::min(count, 8 - byte_bits);
-	   uint8_t copy_data =
-	       (data_new >> (count - copy_bits)) & (0xFF >> (8 - copy_bits));
-	   data.back() |= copy_data << (8 - byte_bits - copy_bits);
-
-	   byte_bits = (byte_bits + copy_bits) % 8;
-	   count -= copy_bits;
-	}
-}
-
-void	AddBytes (const uint8_t *data, size_t len) {
-	for(size_t i = 0; i < len; i++)
-	   AddBits (data[i], 8);
-}
-
-const std::vector<uint8_t> GetData() {
-	   return data;
-	}
-
-void	WriteAudioMuxLengthBytes () {
-	size_t len = data.size() - 3;
-	data [1] |= (len >> 8) & 0x1F;
-	data [2] = len & 0xFF;
-}
-};
 
 //
 //	Now for real
@@ -117,31 +74,18 @@ void	WriteAudioMuxLengthBytes () {
 	                                                 motdata_Handler,
 	                                                 ctx),
 	                                  my_rsDecoder (8, 0435, 0, 1, 10),
-	                                  aacDecoder (soundOut, ctx) {
+	                                     aacDecoder (soundOut, ctx) {
 
-	this	-> bitRate	= bitRate;	// input rate
 	this	-> soundOut	= soundOut;
 	this	-> mscQuality	= mscQuality;	//
 	this	-> ctx		= ctx;
-	superFramesize		= 110 * (bitRate / 8);
+	this	-> bitRate	= bitRate;	// input rate
 	RSDims			= bitRate / 8;
+	superFramesize		= 110 * (bitRate / 8);
 	frameBytes. resize (RSDims * 120);	// input
 	outVector.  resize (RSDims * 110);
 	blockFillIndex	= 0;
 	blocksInBuffer	= 0;
-
-	blockFillIndex	= 0;
-	blocksInBuffer	= 0;
-	frameCount      = 0;
-        frameErrors     = 0;
-        aacErrors       = 0;
-        aacFrames       = 0;
-        successFrames   = 0;
-        rsErrors        = 0;
-
-	frame_quality	= 0;
-	rs_quality	= 0;
-	aac_quality	= 0;
 }
 
 	mp4Processor::~mp4Processor (void) {
@@ -168,14 +112,6 @@ int16_t	nbits	= 24 * bitRate;
 //
 //	we take the last five blocks to look at
 	if (blocksInBuffer >= 5) {
-	   if (++frameCount >= 50) {
-	      frameCount = 0;
-	      frame_quality	= 2 * (50 - frameErrors);
-	      if (mscQuality != nullptr)
-	         mscQuality (frame_quality, rs_quality, aac_quality, ctx);
-	      frameErrors = 0;
-	   }
-
 //	OK, we give it a try, check the fire code
 	   if (fc. check (&frameBytes [blockFillIndex * nbits / 8]) &&
 	       (processSuperframe (frameBytes. data (),
@@ -183,15 +119,9 @@ int16_t	nbits	= 24 * bitRate;
 //	since we processed a full cycle of 5 blocks, we just start a
 //	new sequence, beginning with block blockFillIndex
 	      blocksInBuffer	= 0;
-	      if (++successFrames > 25) {
-	         rs_quality	= 4 * (25 - rsErrors);
-                 successFrames  = 0;
-                 rsErrors       = 0;
-              }
 	   }
 	   else {	// virtual shift to left in block sizes
 	      blocksInBuffer  = 4;
-	      frameErrors ++;
 	   }
 	}
 }
@@ -223,12 +153,12 @@ stream_parms	streamParameters;
 //	OK, the result is N * 110 * 8 bits 
 //	bits 0 .. 15 is firecode
 //	bit 16 is unused
-	streamParameters. dacRate = (outVector [2] >> 6) & 01;	// bit 17
-	streamParameters. sbrFlag = (outVector [2] >> 5) & 01;	// bit 18
-	streamParameters. aacChannelMode = (outVector [2] >> 4) & 01;	// bit 19
+	streamParameters. dacRate =  (outVector [2] >> 6) & 01;	// bit 17
+	streamParameters. sbrFlag =  (outVector [2] >> 5) & 01;	// bit 18
+	streamParameters. aacChannelMode =
+	                             (outVector [2] >> 4) & 01;	// bit 19
 	streamParameters. psFlag   = (outVector [2] >> 3) & 01;	// bit 20
 	streamParameters. mpegSurround	= (outVector [2] & 07);	// bits 21 .. 23
-
 //
 //      added for the aac file writer
         streamParameters. CoreSrIndex   =
@@ -302,7 +232,6 @@ stream_parms	streamParameters;
 //	but first the crc check
 	   if (check_crc_bytes (&(outVector. data ()) [au_start [i]],
 	                        aac_frame_length)) {
-	      bool err;
 //
 //	if there is pad handle it always
 	      if (((outVector [au_start [i] + 0] >> 5) & 07) == 4) {
@@ -313,39 +242,24 @@ stream_parms	streamParameters;
                  uint8_t L1   = buffer [count - 2];
                  my_padHandler. processPAD (buffer, count - 3, L1, L0);
               }
-#ifdef	AAC_OUT
+#ifdef	__WITH_FDK_AAC__
 	      std::vector<uint8_t> fileBuffer;
-	      build_aacFile (aac_frame_length,
-	                     &streamParameters,
-	                     &(outVector. data () [au_start [i]]),
-	                     fileBuffer);
-	      if (soundOut != nullptr) 
-	         (soundOut)((int16_t *)(fileBuffer. data ()),
-	                    fileBuffer. size (), 0, false, nullptr);
-#else	
-//	we handle the aac -> PMC conversion here
-	
-	      uint8_t theAudioUnit [2 * 960 + 10];	// sure, large enough
-	      memcpy (theAudioUnit,
-	                       &outVector [au_start [i]], aac_frame_length);
-	      memset (&theAudioUnit [aac_frame_length], 0, 10);
+	      int segmentSize =
+	         build_aacFile (aac_frame_length,
+	                        &streamParameters,
+	                        &(outVector. data () [au_start [i]]),
+	                        fileBuffer);
+	      (void)aacDecoder. MP42PCM (&streamParameters,
+	                                 fileBuffer. data (), segmentSize);
+#else
+	      uint8_t theAudioUnit [2 * 960 + 10];   // sure, large enough
+              memcpy (theAudioUnit,
+                            &outVector [au_start [i]], aac_frame_length);
+              memset (&theAudioUnit [aac_frame_length], 0, 10);
 
-	      int tmp = aacDecoder. MP42PCM (&streamParameters,
-	                                     theAudioUnit,
-	                                     aac_frame_length);
-	      err = tmp == 0;
-//	      handle_aacFrame (&outVector [au_start [i]],
-//	                       aac_frame_length,
-//	                       &streamParameters,
-//	                       &err);
-	      isStereo (streamParameters. aacChannelMode);
-	      if (err) 
-	         aacErrors ++;
-	      if (++aacFrames > 25) {
-	         aac_quality	= 4 * (25 - aacErrors);
-	         aacErrors	= 0;
-	         aacFrames	= 0;
-	      }
+              (void)aacDecoder. MP42PCM (&streamParameters,
+                                         theAudioUnit,
+                                         aac_frame_length);
 #endif
 	   }
 	   else {
@@ -355,47 +269,7 @@ stream_parms	streamParameters;
 	return true;
 }
 
-void	mp4Processor::handle_aacFrame (uint8_t *v,
-	                               int16_t frame_length,
-	                               stream_parms *sp,
-	                               bool	*error) {
-uint8_t theAudioUnit [2 * 960 + 10];	// sure, large enough
-
-	memcpy (theAudioUnit, v, frame_length);
-	memset (&theAudioUnit [frame_length], 0, 10);
-
-//	if (((theAudioUnit [0] >> 5) & 07) == 4) {
-//	   int16_t count = theAudioUnit [1];
-//           uint8_t buffer [count];
-//           memcpy (buffer, &theAudioUnit [2], count);
-//           uint8_t L0   = buffer [count - 1];
-//           uint8_t L1   = buffer [count - 2];
-//           my_padHandler. processPAD (buffer, count - 3, L1, L0);
-//        }
-
-	int tmp = aacDecoder. MP42PCM (sp,
-	                               theAudioUnit,
-	                               frame_length);
-	*error	= tmp == 0;
-}
-
-void	mp4Processor::show_frameErrors	(int s) {
-	(void)s;
-}
-
-void	mp4Processor::show_rsErrors	(int s) {
-	(void)s;
-}
-
-void	mp4Processor::show_aacErrors	(int s) {
-	(void)s;
-}
-
-void	mp4Processor::isStereo		(bool b) {
-	(void)b;
-}
-
-void	mp4Processor::build_aacFile (int16_t	aac_frame_len,
+int	mp4Processor::build_aacFile (int16_t	aac_frame_len,
 	                             stream_parms *sp,
 	                             uint8_t	*data,
 	                             std::vector<uint8_t> &fileBuffer) {
@@ -441,6 +315,10 @@ BitWriter	au_bw;
 	au_bw. AddBytes (data, aac_frame_len);
 	au_bw. WriteAudioMuxLengthBytes ();
 	fileBuffer	= au_bw. GetData ();
+	return fileBuffer. size ();
 }
+
+
+
 
 

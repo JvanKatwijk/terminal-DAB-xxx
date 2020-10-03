@@ -32,13 +32,17 @@ OPTION(SDRPLAY  "Input: SDRPlay"  OFF)
 OPTION(AIRSPY   "Input: AirSpy"   OFF)
 OPTION(PLUTO	"Input: PLUTO"	  OFF)
 OPTION(RTLSDR	"Input: RTLSDR"	  OFF)
+#OPTION(WAVFILES "Input: WAVFILES" OFF)
+
 OPTION(CURSES	"ncurses"         ON)
 OPTION(PICTURES "show Slides"     ON)
+OPTION(FDK_LIB	"libfdkaac"       OFF)
 OPTION(X64_DEFINED "optimize for x64/SSE"  OFF)
 OPTION(RPI_DEFINED "optimize for ARM/NEON" OFF)
 
 
-if ( (NOT SDRPLAY) AND (NOT AirSpy) AND (NOT PLUTO) AND (NOT RTLSDR) )
+if ( (NOT SDRPLAY) AND (NOT AirSpy) AND (NOT PLUTO) AND (NOT RTLSDR)
+    AND (NOT WAVFILES) )
    message("None of the Input Options selected. Using default SDRPlay")
    set(SDRPlay ON)
 endif ()
@@ -51,6 +55,19 @@ endif ()
 
 if(CURSES)
    set (CURSES true)
+endif ()
+
+if (FDK_LIB)
+   set (FDK_LIB true)
+endif ()
+
+if(WAVFILES)
+   if (objectName STREQUAL "")
+      set(WAVFILES ON)
+      set(objectName dab-files-cli)
+   else ()
+      message ("Ignoring second option")
+   endif ()
 endif ()
 
 if(SDRPLAY)
@@ -133,6 +150,23 @@ endif ()
 ##########################################################################
 #	The devices
 #
+
+	if (WAVFILES)
+	   include_directories (
+	        ./devices/wavfiles/
+	   )
+
+	   set (${objectName}_HDRS
+	        ${${objectName}_HDRS}
+	        ./devices/wavfiles/wavfiles.h
+	   )
+
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	        ./devices/wavfiles/wavfiles.cpp
+	   )
+	   add_definitions (-DHAVE_WAVFILES)
+	endif()
 
 	if (SDRPLAY)
 	   find_path (SDRPLAYLIB_INCLUDE_DIR
@@ -265,6 +299,43 @@ endif ()
 	   set (extraLibs ${extraLibs} ${PTHREADS})
 	endif (NOT(PTHREADS))
 
+	if (FDK_LIB)
+	   find_package (FDKAAC)
+	   if (NOT FDKAAC_FOUND)
+	      message (FATAL "please install FDKAAC")
+	   endif ()
+	   include_directories ( ${FDKAAC_INCLUDE_DIRS})
+	   set ($(objectName)_HDRS
+	        ${${objectName}_HDRS}
+	        ./backend/audio/fdk-aac.h
+	   )
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	        ./backend/audio/fdk-aac.cpp
+	   )
+	   list (APPEND extraLibs ${FDKAAC_LIBRARIES})
+	   add_definitions (-D__WITH_FDK_AAC__)
+	elseif (NOT FDK_AAC)
+           find_package(Faad)
+           if (NOT FAAD_FOUND )
+              message(FATAL_ERROR "please install libfaad")
+           endif ()
+	   set (${objectName}_HDRS
+	        ${${objectName}_HDRS}
+	        ./backend/audio/faad-decoder.h
+	   )
+	   set (${objectName}_SRCS
+	      ${${objectName}_SRCS}
+	        ./backend/audio/faad-decoder.cpp
+	   )
+	   add_definitions (-D__WITH_FAAD__)
+	endif (FDK_AAC)
+
+        find_package(FFTW3f)
+           if (NOT FFTW3F_FOUND)
+              message(FATAL_ERROR "please install FFTW3")
+        endif ()
+
 #######################################################################
 #
 #	Here we really start
@@ -311,8 +382,8 @@ endif ()
 	     ./backend/msc-handler.h
 	     ./backend/virtual-backend.h
 	     ./backend/audio-backend.h
-	     ./backend/audio/faad-decoder.h
 	     ./backend/audio/mp4processor.h 
+	     ./backend/audio/bitWriter.h
 	     ./backend/audio/mp2processor.h 
 	     ./backend/data/virtual-datahandler.h 
 	     ./backend/data/pad-handler.h 
@@ -367,6 +438,7 @@ endif ()
 	     ./backend/virtual-backend.cpp
 	     ./backend/audio-backend.cpp
 	     ./backend/audio/mp4processor.cpp 
+	     ./backend/audio/bitWriter.cpp
 	     ./backend/audio/mp2processor.cpp 
 	     ./backend/data/virtual-datahandler.cpp 
 	     ./backend/data/pad-handler.cpp 

@@ -46,6 +46,8 @@
 #include	"sdrplay-handler.h"
 #elif	HAVE_RTLSDR
 #include	"rtlsdr-handler.h"
+#elif	HAVE_WAVFILES
+#include	"wavfiles.h"
 #endif
 #ifdef	__SHOW_PICTURES__
 #include	<opencv2/core.hpp>
@@ -266,7 +268,10 @@ uint8_t		theMode		= 1;
 std::string	theChannel	= "11C";
 uint8_t		theBand		= BAND_III;
 bool		autogain	= false;
-#ifdef	HAVE_PLUTO
+#ifdef	HAVE_WAVFILES
+const char	*optionsString	= "F:P:";
+std::string	fileName;
+#elif	HAVE_PLUTO
 int16_t		gain		= 60;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:QO:";
 #elif	HAVE_RTLSDR
@@ -362,7 +367,11 @@ Mat img;
 	         fprintf (stderr, "%s \n", optarg);
 	         break;
 
-#ifdef	HAVE_PLUTO
+#ifdef	HAVE_WAVFILES
+	      case 'F':
+	         fileName	= std::string (optarg);
+	         break;
+#elif	HAVE_PLUTO
 	      case 'G':
 	         gain		= atoi (optarg);
 	         break;
@@ -433,7 +442,10 @@ Mat img;
 
 	int32_t frequency	= dabBand. Frequency (theBand, theChannel);
 	try {
-#ifdef	HAVE_SDRPLAY
+#ifdef	HAVE_WAVFILES
+	   theDevice	= new wavFiles	(fileName. c_str (),
+	                                 &_I_Buffer, nullptr);
+#elif	HAVE_SDRPLAY
 	   theDevice	= new sdrplayHandler (&_I_Buffer,
 	                                      frequency,
 	                                      ppmOffset,

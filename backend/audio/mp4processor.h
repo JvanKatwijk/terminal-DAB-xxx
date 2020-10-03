@@ -34,9 +34,12 @@
 #include	"dab-api.h"
 #include	"firecode-checker.h"
 #include	"reed-solomon.h"
+#ifdef	__WITH_FDK_AAC__
+#include	"fdk-aac.h"
+#else
 #include	"faad-decoder.h"
+#endif
 #include	"pad-handler.h"
-
 
 class	mp4Processor : public backendBase {
 public:
@@ -58,7 +61,7 @@ private:
 	                                 int16_t frame_length,
 	                                 stream_parms *sp,
 	                                 bool*);
-	void		build_aacFile (int16_t		aac_frame_len,
+	int		build_aacFile (int16_t		aac_frame_len,
                                        stream_parms	*sp,
 	                               uint8_t		*data,
                                        std::vector<uint8_t>  &header);
@@ -74,23 +77,14 @@ private:
 	firecode_checker	fc;
 	reedSolomon	my_rsDecoder;
 //	and for the aac decoder
+#ifdef	__WITH_FDK_AAC__
+	fdkAAC		aacDecoder;
+#else
 	faadDecoder	aacDecoder;
-
-	int16_t		frameCount;
-	int16_t		successFrames;
-	int16_t		frameErrors;
-	int16_t		rsErrors;
-	int16_t		aacErrors;
-	int16_t		aacFrames;
-
-	int16_t		frame_quality;
-	int16_t		rs_quality;
-	int16_t		aac_quality;
-
-	void            show_frameErrors        (int);
-        void            show_rsErrors           (int);
-        void            show_aacErrors          (int);
-
+#endif
+//	int16_t		frameCount;
+//	int16_t		frameErrors;
+//	int16_t		successFrames;
 	void		isStereo		(bool);
 };
 

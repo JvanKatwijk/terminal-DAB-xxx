@@ -64,6 +64,32 @@ If running the "regular" version, specifying a service name is required,
 if running the "curses" version, if no service name is specified, the
 first element of the (alfabetically sorted) list is taken.
 
+------------------------------------------------------------------------
+faad2.8 and Ubuntu 20.04
+------------------------------------------------------------------------
+
+While the past years the faad library was used for the transformation of the
+AAC data to PCM samples. It seems that the version of the faad library
+that is default in the repositories of Ubuntu 20 (and may be other
+distributions) is incompatible with the AAC.
+
+It is certainly possible to download - or create - the faad-2.8 library
+that has been in use for years, however, there is an easier
+solution:
+For the dab-xxx-cli program one may choose to use the fdkaac library
+instead.
+
+Install the library on Ubuntu
+
+	sudo apt-get install libfdk-aac-dev
+
+Use as cmake option
+
+	-DFDK_LIB=ON
+
+The software will then use the fdkaac library for the decoding of the AAC 
+frames.
+
 -------------------------------------------------------------------------
 Supported devices
 -------------------------------------------------------------------------

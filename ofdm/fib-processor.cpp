@@ -504,11 +504,11 @@ uint8_t		Rfu;
 int16_t		offset	= 0;
 serviceId	*myIndex;
 int16_t		i;
-uint8_t		pd_flag;
+//uint8_t		pd_flag;
 uint8_t		SCidS;
 uint8_t		XPAD_aid;
 uint8_t		flagfield;
-uint8_t		region_id;
+//uint8_t		region_id;
 char		label [17];
 //
 //	from byte 1 we deduce:
@@ -822,7 +822,7 @@ void	fib_processor::reset	(void) {
 //	Country, LTO & international table 8.1.3.2
 void fib_processor::FIG0Extension9 (uint8_t *d) {
 int16_t	offset	= 16;
-uint8_t ecc;
+//uint8_t ecc;
 //
 //	6 indicates the number of hours
 	int	signbit = getBits_1 (d, offset + 2);
