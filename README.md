@@ -5,15 +5,21 @@ A dab decoding program for the terminal, with slides and selections.
 -------------------------------------------------------------------------
 
 ![dab-cmdline](/dab-cli-curses.png?raw=true)
+![dab-cmdline](/dab-xxx-cli-2.png?raw=true)
 
-Qt-DAB is a large GUI driven program with a large amount of options.
-At the other end of the spectrum, there is dab-cmdline with its example 2, a command line driven program  where everything - device, channel and even service -
-is frozen on program execution.
+As well-known, Qt-DAB is a large GUI driven program with a
+large amount of options and widgets.
+At the other end of the spectrum, there is dab-cmdline with its example 2,
+a  straight forward command line driven program where, once the
+program is started, **everything**  - device, channel and even service -
+is frozen.
 
-For day to day use, the example 2 version is too limited,
-stopping and restarting the program for changing the selected
-service is a little overdone. 
-dab-xxx-cli is a program for the terminal handling this:
+For day to day use, the example 2 version from the dab-cmdline repository
+is too limited, stopping and restarting the program for changing the selected
+service does not make much sense.
+dab-xxx-cli is a first step towards a program for the terminal handling this.
+While the selected device is chosen in the configuration to build
+and executable, and the channel is passed as parameter to the program
 
 	a. once started, it shows the services from the ensemble in
 	   the selected channel on the terminal. 
