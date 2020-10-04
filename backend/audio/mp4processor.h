@@ -1,22 +1,23 @@
 #
 /*
- *    Copyright (C) 2013, 2014
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
- *    Lazy Chair Programming
+ *    Lazy Chair Computing
  *
- *    This file is part of the DAB-library
- *    DAB-library is free software; you can redistribute it and/or modify
+ *    This file is part of dab-xxx-cli
+ *
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    DAB-library is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with DAB-library; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
@@ -44,17 +45,12 @@
 class	mp4Processor : public backendBase {
 public:
 			mp4Processor	(int16_t,
-	                                 audioOut_t,
-	                                 dataOut_t,
-	                                 programQuality_t,
-	                                 motdata_t,
+	                                 callbacks	*,
 	                                 void	*);
 			~mp4Processor	(void);
 	void		addtoFrame	(uint8_t *);
 private:
 	bool		processSuperframe (uint8_t [], int16_t);
-	audioOut_t	soundOut;
-	programQuality_t	mscQuality;
 	void		*ctx;
 	padHandler	my_padHandler;
 	void            handle_aacFrame (uint8_t *,

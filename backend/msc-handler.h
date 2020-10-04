@@ -1,28 +1,24 @@
 #
 /*
- *    Copyright (C) 2013 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline
+ *    This file is part of the dab-xxx-cli
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-#
-/*
- * 	MSC data
  */
 #
 #ifndef	__MSC_HANDLER__
@@ -47,11 +43,8 @@ using namespace std;
 class mscHandler {
 public:
 			mscHandler		(uint8_t,
-	                                 	audioOut_t,
-	                                 	dataOut_t,
-	                                 	programQuality_t,
-	                                 	motdata_t,
-	                                 	void		*);
+	                                         callbacks	*,
+	                                 	 void		*);
 			~mscHandler		(void);
 	void		process_mscBlock	(std::complex<float> *,
 	                                                     int16_t);
@@ -68,10 +61,7 @@ virtual	void		run			(void);
 	fft_handler	my_fftHandler;
 	std::complex<float>	*fft_buffer;
 	interLeaver	myMapper;
-	audioOut_t	soundOut;
-	dataOut_t	dataOut;
-	programQuality_t programQuality;
-	motdata_t	motdata_Handler;
+	callbacks	*the_callBacks;
 	void		*userData;
 	Semaphore       freeSlots;
         Semaphore       usedSlots;

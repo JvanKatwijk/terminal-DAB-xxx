@@ -25,7 +25,6 @@
 #include	"fib-processor.h"
 #include	<cstring>
 #include	"charsets.h"
-//#include	"ensemble-handler.h"
 //
 //
 // Tabelle ETSI EN 300 401 Page 50
@@ -96,15 +95,9 @@
                                    {416,1,384}};
 
 //
-	fib_processor::fib_processor (ensemblename_t ensemblenameHandler,
-	                              programname_t  programnameHandler,
-	                              theTime_t	     timeHandler,
-	                              void	*userData) {
-	this	-> ensemblenameHandler	= ensemblenameHandler;
-	if (programnameHandler == nullptr)
-	   fprintf (stderr, "nullptr detected\n");
-	this	-> programnameHandler	= programnameHandler;
-	this	-> timeHandler		= timeHandler;
+	fib_processor::fib_processor (callbacks		*the_callBacks,
+	                              void		*userData) {
+	this	-> the_callBacks	= the_callBacks;
 	this	-> userData		= userData;
 	memset (dateTime, 0, sizeof (dateTime));
 	reset	();
@@ -790,15 +783,13 @@ serviceId *selectedService;
 //	in the fib structures, so release the lock
 void	fib_processor::addtoEnsemble	(const std::string &s, int32_t SId) {
 	fibLocker. unlock ();
-	if (programnameHandler != nullptr)
-	   programnameHandler (s, SId, userData);
+	the_callBacks -> programnameHandler (s, SId, userData);
 	fibLocker. lock ();
 }
 
 void	fib_processor::nameofEnsemble  (int id, const std::string &s) {
 	fibLocker. unlock ();
-	if (ensemblenameHandler != nullptr)
-	   ensemblenameHandler (s, id, userData);
+	the_callBacks -> ensembleHandler (s, id, userData);
 	fibLocker. lock ();
 	isSynced	= true;
 }
@@ -953,7 +944,6 @@ int32_t	theTime	[6];
 	if (change) {
 	   adjustTime (dateTime);
 	   std::string timeString = mapTime (dateTime);
-	   if (timeHandler != nullptr)
-	      timeHandler (timeString, userData);
+	   the_callBacks ->  timeHandler (timeString, userData);
 	}
 }

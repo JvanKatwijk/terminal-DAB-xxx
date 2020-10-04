@@ -91,10 +91,8 @@
 
 class	fib_processor {
 public:
-		fib_processor		(ensemblename_t,
-	                                 programname_t,
-	                                 theTime_t,
-	                                 void	*);
+		fib_processor		(callbacks	*,
+	                                 void		*);
 		~fib_processor		(void);
 	void	process_FIB		(uint8_t *, uint16_t);
 
@@ -107,9 +105,7 @@ public:
 	void	reset			();
 
 private:
-	ensemblename_t	ensemblenameHandler;
-	programname_t	programnameHandler;
-	theTime_t	timeHandler;
+	callbacks	*the_callBacks;
 	void		*userData;
 	int32_t		dateTime [8];
 	serviceId	*findServiceId (int32_t);

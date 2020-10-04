@@ -57,16 +57,6 @@ typedef	struct {
 //	certain that no ensemble will be detected
 	typedef void (*syncsignal_t)(bool, void *);
 //
-//	the systemdata is sent once per second with information
-//	a. whether or not time synchronization is OK
-//	b. the SNR, 
-//	c. the computed frequency offset (in Hz)
-	typedef	void (*systemdata_t)(bool, int16_t, int32_t, void *);
-//
-//	the fibQuality is sent regularly and indicates the percentage
-//	of FIB packages that pass the CRC test
-	typedef void (*fib_quality_t) (int16_t, void *);
-//
 //	the ensemblename is sent whenever the library detects the
 //	name of the ensemble
 	typedef void (*ensemblename_t)(std::string, int32_t, void *);
@@ -88,112 +78,20 @@ typedef	struct {
 //	dynamic label data, embedded in the audio stream, is sent as string
 	typedef void (*dataOut_t)(std::string, void *);
 //
-//	the quality of the DAB data is reflected in 1 number in case
-//	of DAB, and 3 in case of DAB+,
-//	the first number indicates the percentage of dab packages that
-//	passes tests, and for DAB+ the percentage of valid DAB_ frames.
-//	The second and third number are for DAB+: the second gives the
-//	percentage of packages passing the Reed Solomon correction,
-//	and the third number gives the percentage of valid AAC frames
-	typedef void (*programQuality_t)(int16_t, int16_t, int16_t, void *);
-//
-//	After selecting a service, parameters of the selected program
-//	are sent back.
-	typedef void (*programdata_t)(audiodata *, void *);
-
-//
 //	MOT pictures - i.e. slides encoded in the Program Associated data
 //	are stored in a file. Each time such a file is created, the
 //	function registered as
 	typedef void (*motdata_t)(std::string, int, void *);
 //	is invoked (if not specified as NULL)
 //
-//	For Hayati's tii handling:
-//      TII
-        typedef void (*tii_t)(int16_t mainId, int16_t subId, unsigned num, void *);
-        typedef void (*tii_ex_t)(int numOut, int *outTii, float *outAvgSNR, float *outMinSNR, float *outNxtSNR, unsigned numAvg, const float *Pavg, int Pavg_T_u, void *userData);
-
-/////////////////////////////////////////////////////////////////////////
+typedef struct {
+        syncsignal_t    signalHandler;
+        theTime_t       timeHandler;
+        ensemblename_t  ensembleHandler;
+        programname_t   programnameHandler;
+	audioOut_t	audioOutHandler;
+        dataOut_t       dynamicLabelHandler;
+        motdata_t       motdataHandler;
+} callbacks;
 //
-//	The API functions
-extern "C" {
-//	dabInit is called first, with a valid deviceHandler and a valid
-//	Mode.
-//	The parameters "spectrumBuffer" and "iqBuffer" will contain
-//	-- if no NULL parameters are passed -- data to compute a
-//	spectrumbuffer	and a constellation diagram.
-//
-//	The other parameters are as described above. For each of them a NULL
-//	can be passed as parameter, with the expected result.
-//
-void	*dabInit   (RingBuffer<std::complex<float>> *,
-	            uint8_t             Mode,
-	            syncsignal_t        syncsignalHandler,
-	            systemdata_t        systemdataHandler,
-	            ensemblename_t      ensemblenameHandler,
-	            programname_t       programnamehandler,
-	            fib_quality_t       fib_qualityHandler,
-	            audioOut_t          audioOut_Handler,
-	            dataOut_t           dataOut_Handler,
-	            programdata_t       programdataHandler,
-	            programQuality_t    program_qualityHandler,
-	            motdata_t		motdata_Handler,
-	            void                *userData);
-
-//	dabExit cleans up the library on termination
-void	dabExit		(void *);
-//
-//	the actual processing starts with calling startProcessing,
-//	note that the input device needs to be started separately
-void	dabStartProcessing (void *);
-//
-//	dabReset is as the name suggests for resetting the state of the library
-void	dabReset	(void *);
-//
-//	dabStop will stop operation of the functions in the library
-void	dabStop		(void *);
-//
-//	dabReset_msc will terminate the operation of active audio and/or data
-//	handlers (there may be more than one active!).
-//	If selecting a service (or services),
-//	normal operation is to call first
-//	on dabReset_msc, and then call set_xxxChannel for
-//	the requested services
-void	dabReset_msc		(void *);
-//
-//	is_audioService will return true id the main service with the
-//	name is an audioservice
-bool	is_audioService		(void *, const char *);
-//
-//	is_dataService will return true id the main service with the
-//	name is a dataservice
-//bool	is_dataService		(void *, const char *);
-//
-//	dataforAudioService will search for the audiodata of the i-th
-//	(sub)service with the name as given. If no such service exists,
-//	the "defined" bit in the struct will be set to false;
-void	dataforAudioService	(void *, const char *, audiodata *, int);
-//
-//	dataforDataService will search for the packetdata of the i-th
-//	(sub)service with the name as given. If no such service exists,
-//	the "defined" bit in the struct will be set to false;
-//void	dataforDataService	(void *, const char *, packetdata *, int);
-//
-//	set-audioChannel will add - if properly defined - a handler
-//	for handling the audiodata as described in the parameter
-//	to the list of active handlers
-void	set_audioChannel	(void *, audiodata *);
-//
-//	set-dataChannel will add - if properly defined - a handler
-//	for handling the packetdata as described in the parameter
-//	to the list of active handlers
-//void	set_dataChannel		(void *, packetdata *);
-//
-//	mapping from a name to a Service identifier is done 
-//int32_t dab_getSId		(void *, const char*);
-//
-//	and the other way around, mapping the service identifier to a name
-//void	dab_getserviceName	(void *, int32_t, char *);
-}
 #endif
-

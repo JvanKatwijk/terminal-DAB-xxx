@@ -44,6 +44,8 @@
 #include	"pluto-handler.h"
 #elif	HAVE_SDRPLAY
 #include	"sdrplay-handler.h"
+#elif	HAVE_SDRPLAY_V3
+#include	"sdrplay-handler-v3.h"
 #elif	HAVE_RTLSDR
 #include	"rtlsdr-handler.h"
 #elif	HAVE_WAVFILES
@@ -73,13 +75,14 @@ using std::endl;
 	   std::string string;
 	} message;
 	std::queue<message> messageQueue;
+
 #define	S_SERVICE_CHANGE	0100
 #define	S_NEW_TIME		0101
 #define	S_NEW_PICTURE		0102
 //	some offsets 
 #define	ENSEMBLE_ROW	4
 #define	ENSEMBLE_COLUMN	4
-#define	PLAYING_COLUMN	(ENSEMBLE_COLUMN + 16 + 2)
+#define	PLAYING_COLUMN	(ENSEMBLE_COLUMN + 22 + 2)
 #define	SERVICE_ROW	(ENSEMBLE_ROW + 1)
 #define	SERVICE_COLUMN	10
 #define	DOT_COLUMN	(SERVICE_COLUMN - 2)
@@ -188,23 +191,12 @@ void	programnameHandler (std::string s, int SId, void *userdata) {
 	serviceNames = insert (serviceNames, s);
 }
 
-static
-void	programdataHandler (audiodata *d, void *ctx) {
-	(void)d; (void)ctx;
-//	std::cerr << "\tstartaddress\t= " << d -> startAddr << "\n";
-//	std::cerr << "\tlength\t\t= "     << d -> length << "\n";
-//	std::cerr << "\tsubChId\t\t= "    << d -> subchId << "\n";
-//	std::cerr << "\tprotection\t= "   << d -> protLevel << "\n";
-//	std::cerr << "\tbitrate\t\t= "    << d -> bitRate << "\n";
-}
-
-//
 //	The function is called from within the library with
 //	a string, the so-called dynamic label
 static
 char	theLabel [255];
 static
-void	dataOut_Handler (std::string dynamicLabel, void *ctx) {
+void	dynamicLabelHandler (std::string dynamicLabel, void *ctx) {
 uint16_t i;
 	(void)ctx;
 	for (i = 0; i < dynamicLabel. size (); i ++)
@@ -234,7 +226,7 @@ void	motdataHandler (std::string s, int d, void *ctx) {
 #endif
 //
 static
-void	pcmHandler (int16_t *buffer, int size, int rate,
+void	audioOutHandler (int16_t *buffer, int size, int rate,
 	                              bool isStereo, void *ctx) {
 static bool isStarted	= false;
 
@@ -244,22 +236,6 @@ static bool isStarted	= false;
 	   isStarted	= true;
 	}
 	soundOut	-> audioOut (buffer, size, rate);
-}
-
-static
-void	systemData (bool flag, int16_t snr, int32_t freqOff, void *ctx) {
-//	fprintf (stderr, "synced = %s, snr = %d, offset = %d\n",
-//	                    flag? "on":"off", snr, freqOff);
-}
-
-static
-void	fibQuality	(int16_t q, void *ctx) {
-//	fprintf (stderr, "fic quality = %d\n", q);
-}
-
-static
-void	mscQuality	(int16_t fe, int16_t rsE, int16_t aacE, void *ctx) {
-//	fprintf (stderr, "msc quality = %d %d %d\n", fe, rsE, aacE);
 }
 
 int	main (int argc, char **argv) {
@@ -283,12 +259,18 @@ int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
+#elif	HAVE_SDRPLAY_V3	
+int16_t		GRdB		= 30;
+int16_t		lnaState	= 4;
+int16_t		ppmOffset	= 0;
+const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
 #elif	HAVE_AIRSPY
 int16_t		gain		= 20;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:p:bO:";
 #endif
+callbacks	the_callBacks;
 std::string	soundChannel	= "default";
 int16_t		latency		= 10;
 int16_t		timeSyncTime	= 10;
@@ -304,7 +286,16 @@ RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
 std::string image_path;
 Mat img;
 #endif
-	std::cerr << "dab_cmdline example,\n \
+
+	the_callBacks. signalHandler		= syncsignalHandler;
+	the_callBacks. timeHandler		= timeHandler;
+	the_callBacks. ensembleHandler		= ensemblenameHandler;
+	the_callBacks. audioOutHandler		= audioOutHandler;
+	the_callBacks. programnameHandler	= programnameHandler;
+	the_callBacks. dynamicLabelHandler	= dynamicLabelHandler;
+	the_callBacks. motdataHandler		= motdataHandler;
+
+	std::cerr << "dab-xxx-cli,\n \
 	                Copyright 2020 J van Katwijk, Lazy Chair Computing\n";
 	timeSynced.	store (false);
 	timesyncSet.	store (false);
@@ -380,7 +371,6 @@ Mat img;
 	         autogain	= true;
 	         break;
 
-
 #elif	HAVE_RTLSDR
 	      case 'G':
 	         gain		= atoi (optarg);
@@ -395,6 +385,19 @@ Mat img;
 	         break;
 
 #elif	HAVE_SDRPLAY
+	      case 'G':
+	         GRdB		= atoi (optarg);
+	         break;
+
+	      case 'L':
+	         lnaState	= atoi (optarg);
+	         break;
+
+	      case 'Q':
+	         autogain	= true;
+	         break;
+
+#elif	HAVE_SDRPLAY_V3
 	      case 'G':
 	         GRdB		= atoi (optarg);
 	         break;
@@ -442,9 +445,15 @@ Mat img;
 
 	int32_t frequency	= dabBand. Frequency (theBand, theChannel);
 	try {
-#ifdef	HAVE_WAVFILES
-	   theDevice	= new wavFiles	(fileName. c_str (),
-	                                 &_I_Buffer, nullptr);
+#ifdef	HAVE_SDRPLAY_V3
+	   theDevice	= new sdrplayHandler_v3 (&_I_Buffer,
+	                                         frequency,
+	                                         ppmOffset,
+	                                         GRdB,
+	                                         lnaState,
+	                                         autogain,
+	                                         0,
+	                                         0);
 #elif	HAVE_SDRPLAY
 	   theDevice	= new sdrplayHandler (&_I_Buffer,
 	                                      frequency,
@@ -470,6 +479,9 @@ Mat img;
                                              ppmOffset,
                                              gain,
                                              autogain);
+#elif	HAVE_WAVFILES
+	   theDevice	= new wavFiles	(fileName. c_str (),
+	                                 &_I_Buffer, nullptr);
 #endif
 
 	}
@@ -493,17 +505,7 @@ Mat img;
 //	and with a sound device we now can create a "backend"
 	theRadio	= new dabProcessor (&_I_Buffer,
 	                                    theMode,
-	                                    syncsignalHandler,
-	                                    systemData,
-	                                    ensemblenameHandler,
-	                                    programnameHandler,
-		                            timeHandler,
-	                                    fibQuality,
-	                                    pcmHandler,
-	                                    dataOut_Handler,
-	                                    programdataHandler,
-	                                    mscQuality,
-	                                    motdataHandler,	// MOT in PAD
+	                                    &the_callBacks,
 	                                    nullptr		// Ctx
 	                          );
 	if (theRadio == nullptr) {
@@ -556,14 +558,20 @@ Mat img;
 	writeMessage (0, 10, "DAB command line decoder    ");
 	writeMessage (1, 1, "Use up and down arrow keys to scan throught the services");
 	writeMessage (2, 1, "acknowledge selection by space or return, q is quit");
+//
 	run. store (true);
 	std::thread keyboard_listener = std::thread (&listener);
 
 	sleep (5);
-	char ensembleText [80];
-	sprintf (ensembleText, "Ensemble: %s", ensembleName. c_str ());
+//
+//	clean the screen
+//	go for an ensemble
 	for (int i = 5; i < COLS - 5; i ++)
 	   mvaddch (3, i, '=');
+	char ensembleText [80];
+	sprintf (ensembleText, " %s: Ensemble: %s",
+	                                   theChannel. c_str (),
+	                                   ensembleName. c_str ());
 	writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, ensembleText);
 	for (uint16_t i = 0; i < serviceNames. size (); i ++)
 	   writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
@@ -624,7 +632,7 @@ Mat img;
 //	                     fprintf (stderr, "key was %d\n", c);
 	               }
 	               break;
-	#endif
+#endif
 	            default:
 	               break;
 	         }

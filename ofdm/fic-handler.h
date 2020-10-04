@@ -42,10 +42,7 @@ class ficHandler: public viterbiSpiral {
 //class ficHandler: public viterbiHandler {
 public:
 		ficHandler		(uint8_t,	// dabMode
-	                                 ensemblename_t,
-	                                 programname_t,
-	                                 theTime_t,
-	                                 fib_quality_t,
+	                                 callbacks	*,
 	                                 void	*);
 		~ficHandler		();
 	void	process_ficBlock	(std::vector<int16_t>, int16_t);
@@ -54,8 +51,8 @@ public:
 	void	dataforAudioService	(std::string &, audiodata *, int);
 	void	reset			();
 private:
+	callbacks	*the_callBacks;
 	fib_processor	fibProcessor;
-	fib_quality_t	fib_qualityHandler;
 	dabParams	params;
 	void		*userData;
 	void		process_ficInput	(int16_t);
@@ -72,7 +69,6 @@ private:
 	mutex		fibProtector;
 	uint8_t		PRBS [768];
 	uint8_t		shiftRegister [9];
-	void		show_ficCRC	(bool);
 };
 
 #endif

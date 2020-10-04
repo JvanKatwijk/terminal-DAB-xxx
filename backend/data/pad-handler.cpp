@@ -1,22 +1,23 @@
 #
 /*
- *    Copyright (C) 2015 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the DAB library
- *    DAB library is free software; you can redistribute it and/or modify
+ *    This file is part of dab-xxx-cli
+ *
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    DAB library is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with DAB library; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include	"pad-handler.h"
@@ -27,10 +28,9 @@
   *	\class padHandler
   *	Handles the pad segments passed on from mp2- and mp4Processor
   */
-	padHandler::padHandler	(dataOut_t dataOut,
-	                         motdata_t motdata_Handler, void *ctx) {
-	this	-> dataOut		= dataOut;
-	this	-> motdata_Handler	= motdata_Handler;
+	padHandler::padHandler	(callbacks	*the_callBacks,
+	                         void *ctx) {
+	this	-> the_callBacks	= the_callBacks;
 	this	-> ctx			= ctx;
 //
 //	mscGroupElement indicates whether we are handling an
@@ -107,7 +107,8 @@ int16_t	i;
 	         if (firstSegment && !lastSegment) {
                     segmentNumber   = b [last - 2] >> 4;
                     if (dynamicLabelText. size () > 0)
-                       dataOut (dynamicLabelText, ctx);
+                       the_callBacks ->
+	                      dynamicLabelHandler (dynamicLabelText, ctx);
                     dynamicLabelText. clear ();
                  }
 	
@@ -152,7 +153,7 @@ int16_t	i;
                     dynamicLabelText. append (segmentText);
 	      shortpadData. resize (0);
               if (dynamicLabelText. length () > 0)
-                 dataOut (dynamicLabelText, ctx);
+                 the_callBacks -> dynamicLabelHandler (dynamicLabelText, ctx);
               dynamicLabelText. clear ();
            }
 	}
@@ -303,7 +304,8 @@ int16_t  dataLength	= 0;
 //	if at the end, show the label
 	      if (last) {
 	         if (!moreXPad) {
-	            dataOut (dynamicLabelText, ctx);
+	            the_callBacks ->
+	                   dynamicLabelHandler (dynamicLabelText, ctx);
 	                              
 	         }
 	         else
@@ -332,7 +334,7 @@ int16_t  dataLength	= 0;
 	                                     dataLength);
 	   dynamicLabelText. append(segmentText);
 	   if (!moreXPad && isLastSegment) {
-	      dataOut (dynamicLabelText, ctx);
+	      the_callBacks -> dynamicLabelHandler (dynamicLabelText, ctx);
 	   }
 	}
 }
@@ -442,7 +444,7 @@ int32_t size    = (int)(data. size ()) <
 	   case 3:
 	      if (currentSlide == nullptr) {
 //	         fprintf (stderr, "creating %d\n", (uint32_t)transportId);
-	         currentSlide   = new motObject (motdata_Handler,
+	         currentSlide   = new motObject (the_callBacks,
 	                                         false,
 	                                         transportId,
 	                                         &data [index + 2],
@@ -457,7 +459,7 @@ int32_t size    = (int)(data. size ()) <
 //	                  currentSlide -> get_transportId (),
 //	                  (uint32_t)transportId);
 	         delete currentSlide;
-	         currentSlide   = new motObject (motdata_Handler,
+	         currentSlide   = new motObject (the_callBacks,
 	                                         false,
 	                                         transportId,
 	                                         &data [index + 2],

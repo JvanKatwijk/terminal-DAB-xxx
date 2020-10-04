@@ -1,22 +1,23 @@
 #
 /*
- *    Copyright (C) 2015 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab library
- *    dab library is free software; you can redistribute it and/or modify
+ *    This file is part of dab-xxx-cli
+ *
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab library is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab library; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *	MOT handling is a crime, here we have a single class responsible
@@ -24,7 +25,7 @@
  */
 #include	"mot-dir.h"
 
-	motDirectory::motDirectory (motdata_t	motdataHandler,
+	motDirectory::motDirectory (callbacks	*the_callBacks,
 	                            void	*ctx,
 	                            uint16_t	transportId,
 	                            int16_t	segmentSize,
@@ -33,7 +34,7 @@
 	                            uint8_t	*segment) {
 int16_t	i;
 
-	   this	-> motdataHandler	= motdataHandler;
+	   this	-> the_callBacks	= the_callBacks;
 	   this	-> ctx			= ctx;
 	   for (i = 0; i < 512; i ++)
 	      marked [i] = false;
@@ -131,7 +132,7 @@ int16_t	i;
 	   if (transportId == 0)	// just a dummy
 	      break;
 	   uint8_t *segment	= &data [currentBase + 2];
-	   motObject *handle	= new motObject (motdataHandler,
+	   motObject *handle	= new motObject (the_callBacks,
 	                                         true,
 	                                         transportId,
 	                                         segment,

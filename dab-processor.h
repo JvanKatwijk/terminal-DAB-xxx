@@ -45,45 +45,29 @@ class dabProcessor {
 public:
 		dabProcessor  	(RingBuffer<std::complex<float>> *,
 	                         uint8_t,		// Mode
-	                         syncsignal_t,
-	                         systemdata_t,
-	                         ensemblename_t,
-	                         programname_t,
-	                         theTime_t,
-	                         fib_quality_t,
-	                         audioOut_t,
-	                         dataOut_t,
-	                         programdata_t,
-	                         programQuality_t,
-	                         motdata_t,
+	                         callbacks	*,
 	                         void	*);
 	virtual ~dabProcessor	(void);
 	void	reset			(void);
 	void	stop			(void);
-	void	setOffset		(int32_t);
 	void	start			(void);
 	bool	signalSeemsGood		(void);
-	void	show_Corrector		(int);
 //      inheriting from our delegates
 	bool		is_audioService		(std::string);
 	void		dataforAudioService     (std::string,   audiodata *);
 	void		set_audioChannel        (audiodata *);
-	std::string	get_ensembleName        (void);
 	void		clearEnsemble           (void);
 	void		reset_msc		(void);
 private:
 //
 	RingBuffer<std::complex<float>>	*_I_Buffer;
+	callbacks	*the_callBacks;
 	dabParams	params;
 	sampleReader	myReader;
 	phaseReference	phaseSynchronizer;
 	ofdmDecoder	my_ofdmDecoder;
 	ficHandler	my_ficHandler;
 	mscHandler	my_mscHandler;
-	syncsignal_t	syncsignalHandler;
-	systemdata_t	systemdataHandler;
-	programdata_t	programdataHandler;
-	void		call_systemData (bool, int16_t, int32_t);
 	std::thread	threadHandle;
 	void		*userData;
 	std::atomic<bool>	running;
@@ -97,7 +81,6 @@ private:
 	int32_t		nrBlocks;
 	int32_t		carriers;
 	int32_t		carrierDiff;
-	bool		wasSecond	(int16_t, dabParams *);
 virtual	void		run		(void);
 };
 #endif

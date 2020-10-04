@@ -1,7 +1,7 @@
 #
 /*
- *    Copyright (C) 2014 .. 2017
- *    Jan van Katwijk (J.vanKatwijk@gmail.com)
+ *    Copyright (C) 2020
+ *    Jan van Katwijk (J.vanKatwijk@gmail.com
  *    Lazy Chair Computing
  *
  *    This file is part of dab-xxx-cli
@@ -42,13 +42,13 @@ typedef struct {
 
 class	faadDecoder {
 public:
-        		faadDecoder     (audioOut_t, void *);
+        		faadDecoder     (callbacks *, void *);
         		~faadDecoder	();
 	int16_t		MP42PCM		(stream_parms *sp,
                                  	uint8_t buffer [],
                                  	int16_t bufferLength);
 private:
-	audioOut_t	soundOut;
+	callbacks	*the_callBacks;
 	void		*userData;
 	bool		initialize      (stream_parms *);
 	void		output		(int16_t *, int, bool, int);

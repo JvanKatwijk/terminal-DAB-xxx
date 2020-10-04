@@ -1,22 +1,23 @@
 #
 /*
- *    Copyright (C) 2015 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab library
- *    dab library is free software; you can redistribute it and/or modify
+ *    This file is part of dab-xxx-cli
+ *
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab library is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab library; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -30,7 +31,7 @@
 
 class	motObject {
 public:
-		motObject (motdata_t	motdataHandler,
+		motObject (callbacks	*,
 	                   bool		dirElement,
 	                   uint16_t	transportId,
 	                   uint8_t	*segment,
@@ -45,7 +46,7 @@ public:
 	uint16_t	get_transportId (void);
 	int		get_headerSize	(void);
 private:
-	motdata_t	motdataHandler;
+	callbacks	*the_callBacks;
 	bool		dirElement;
 	uint16_t	transportId;
 	int16_t		numofSegments;

@@ -33,17 +33,7 @@
 
 	dabProcessor::dabProcessor	(RingBuffer<std::complex<float>> *buffer,
 	                                 uint8_t	dabMode,
-	                                 syncsignal_t	syncsignalHandler,
-	                                 systemdata_t	systemdataHandler,
-	                                 ensemblename_t	ensemblename_Handler,
-	                                 programname_t	programname_Handler,
-	                                 theTime_t	timeHandler,
-	                                 fib_quality_t	fibquality_Handler,
-	                                 audioOut_t	audioOut,
-	                                 dataOut_t	dataOut_handler,
-	                                 programdata_t	programdata,
-	                                 programQuality_t mscQuality,
-	                                 motdata_t	motdata_Handler,
+	                                 callbacks	*the_callBacks,
 	                                 void		*userData):
 	                                    params (dabMode),
 	                                    myReader (this, buffer),
@@ -51,20 +41,12 @@
 	                                                       DIFF_LENGTH),
 	                                    my_ofdmDecoder (dabMode),
 	                                    my_ficHandler (dabMode,
-	                                                   ensemblename_Handler,
-                                                           programname_Handler,
-	                                                   timeHandler,
-                                                           fibquality_Handler,
+	                                                   the_callBacks,
 	                                                   userData),
 	                                    my_mscHandler  (dabMode,
-                                                            audioOut,
-                                                            dataOut_handler,
-                                                            mscQuality,
-                                                            motdata_Handler,
+	                                                    the_callBacks,
                                                             userData) {
-	this	-> syncsignalHandler	= syncsignalHandler;
-	this	-> systemdataHandler	= systemdataHandler;
-	this	-> programdataHandler	= programdata;
+	this	-> the_callBacks	= the_callBacks;
 	this	-> userData		= userData;
 	this	-> T_null		= params. get_T_null ();
 	this	-> T_s			= params. get_T_s ();
@@ -122,7 +104,7 @@ notSynced:
 
               case NO_DIP_FOUND:
                  if  (++ dip_attempts >= 5) {
-                    syncsignalHandler (false, userData);
+                    the_callBacks -> signalHandler (false, userData);
                     dip_attempts = 0;
                  }
                  goto notSynced;
@@ -140,7 +122,7 @@ notSynced:
 	   if (startIndex < 0) { // no sync, try again
 	      isSynced	= false;
 	      if (++index_attempts > 10) {
-	         syncsignalHandler (false, userData);
+	         the_callBacks -> signalHandler (false, userData);
 	         index_attempts	= 0;
 	      }
 //	      fprintf (stderr, "startIndex %d\n", startIndex);
@@ -168,7 +150,7 @@ SyncOnPhase:
 	   index_attempts	= 0;
 	   dip_attempts		= 0;
 	   isSynced		= true;
-	   syncsignalHandler (isSynced, userData);
+	   the_callBacks -> signalHandler (isSynced, userData);
 
 //	Once here, we are synchronized, we need to copy the data we
 //	used for synchronization for block 0
@@ -277,18 +259,6 @@ void	dabProcessor::stop	(void) {
 	}
 }
 
-void	dabProcessor::call_systemData (bool f, int16_t snr, int32_t freq) {
-	if (systemdataHandler != nullptr)
-	   systemdataHandler (f, snr, freq, userData);
-}
-
-void	dabProcessor::show_Corrector (int freqOffset) {
-	if (systemdataHandler != nullptr)
-	   systemdataHandler (isSynced,
-	                      snr,
-	                      freqOffset, userData);
-}
-
 bool	dabProcessor::signalSeemsGood	(void) {
 	return isSynced;
 }
@@ -309,7 +279,6 @@ void    dabProcessor::reset_msc (void) {
 
 void    dabProcessor::set_audioChannel (audiodata *d) {
         my_mscHandler. set_audioChannel (d);
-	programdataHandler (d, userData);
 }
 
 void    dabProcessor::clearEnsemble     (void) {

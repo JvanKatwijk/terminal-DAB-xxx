@@ -24,9 +24,9 @@
 #include        "faad-decoder.h"
 #include        "neaacdec.h"
 
-        faadDecoder::faadDecoder        (audioOut_t soundOut,
+        faadDecoder::faadDecoder        (callbacks	*the_callBacks,
 	                                 void *ctx) {
-	this	-> soundOut	= soundOut;
+	this	-> the_callBacks	= the_callBacks;
 	this	-> userData	= ctx;
         aacCap			= NeAACDecGetCapabilities();
         aacHandle		= NeAACDecOpen();
@@ -165,8 +165,9 @@ uint8_t channels;
 
 void	faadDecoder::output (int16_t *buffer, int     size,
 	                     bool    isStereo, int     rate) {
-	if (soundOut == NULL)
+	if (the_callBacks -> audioOutHandler == NULL)
 	   return;
-	soundOut(buffer, size, rate, isStereo, userData);
+	the_callBacks -> audioOutHandler (buffer, size,
+	                                  rate, isStereo, userData);
 }
 

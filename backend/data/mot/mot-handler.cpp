@@ -1,22 +1,23 @@
 #
 /*
- *    Copyright (C) 2015 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-library
- *    dab-library is free software; you can redistribute it and/or modify
+ *    This file is part of dab-xxx-cli
+ *
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-library is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-library; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 //
@@ -33,11 +34,11 @@ struct {
 	motObject	*motSlide;
 } motTable [15];
 
-	motHandler::motHandler (motdata_t motdataHandler,
-	                        void	*ctx) {
-	this	-> motdataHandler	= motdataHandler;
+	motHandler::motHandler (callbacks	*the_callBacks,
+	                        void		*ctx) {
+	this	-> the_callBacks	= the_callBacks;
 	this	-> ctx			= ctx;
-	orderNumber		= 0;
+	orderNumber			= 0;
 
 	theDirectory		= nullptr;
 	for (int i = 0; i < 15; i ++)
@@ -117,7 +118,7 @@ int32_t	i;
 	         motObject *h = getHandle (transportId);
 	         if (h != nullptr) 
 	            break;
-	         h = new motObject (motdataHandler,
+	         h = new motObject (the_callBacks,
 	                            false,	// not within a directory
 	                            transportId,
 	                            &motVector [2],	
@@ -161,7 +162,7 @@ int32_t	i;
 //	         int32_t segSize
 //	                        = ((segment [9] & 0x1F) << 8) |
 //	                           segment [10];
-	         theDirectory	= new motDirectory (motdataHandler,
+	         theDirectory	= new motDirectory (the_callBacks,
 	                                            ctx,
 	                                            transportId,
 	                                            segmentSize,

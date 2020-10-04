@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2013 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline
+ *    This file is part of the dab-xxx-cli
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
@@ -41,19 +41,13 @@ int16_t	cifVector [55296];
 static int blocksperCIF [] = {18, 72, 0, 36};
 
 		mscHandler::mscHandler	(uint8_t	dabMode,
-	                                 audioOut_t	soundOut,
-	                                 dataOut_t	dataOut,
-	                                 programQuality_t mscQuality,
-	                                 motdata_t	motdata_Handler,
+	                                 callbacks	*the_callBacks,
 	                                 void		*userData):
 	                                    params (dabMode),
 	                                    my_fftHandler (dabMode),
 	                                    myMapper (dabMode),
 	                                    freeSlots (params. get_L ()) {
-	this	-> soundOut		= soundOut;
-	this	-> dataOut		= dataOut;
-	this	-> programQuality	= mscQuality;
-	this	-> motdata_Handler	= motdata_Handler;
+	this	-> the_callBacks	= the_callBacks;
 	this	-> userData		= userData;
 	theData				= new std::complex<float> *[params. get_L ()];
 	for (int i = 0; i < params. get_L (); i ++)
@@ -173,11 +167,8 @@ void	mscHandler::set_audioChannel (audiodata *d) {
 //
 //	we could assert here that theBackend == nullptr
 	theBackends. push_back (new audioBackend (d,
-	                                    soundOut,
-	                                    dataOut,
-	                                    programQuality,
-	                                    motdata_Handler,
-	                                    userData));
+	                                          the_callBacks,
+	                                          userData));
 	mutexer. unlock ();
 }
 

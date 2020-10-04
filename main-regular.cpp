@@ -42,6 +42,8 @@
 #include	"pluto-handler.h"
 #elif	HAVE_SDRPLAY
 #include	"sdrplay-handler.h"
+#elif	HAVE_SDRPLAY_V3
+#include	"sdrplay-handler-v3.h"
 #elif	HAVE_RTLSDR
 #include	"rtlsdr-handler.h"
 #endif
@@ -159,7 +161,7 @@ void	programdataHandler (audiodata *d, void *ctx) {
 //	The function is called from within the library with
 //	a string, the so-called dynamic label
 static
-void	dataOut_Handler (std::string dynamicLabel, void *ctx) {
+void	dynamicLabelHandler (std::string dynamicLabel, void *ctx) {
 	(void)ctx;
 	std::cerr << dynamicLabel << "\r";
 }
@@ -199,22 +201,6 @@ static bool isStarted	= false;
 	soundOut	-> audioOut (buffer, size, rate);
 }
 
-static
-void	systemData (bool flag, int16_t snr, int32_t freqOff, void *ctx) {
-//	fprintf (stderr, "synced = %s, snr = %d, offset = %d\n",
-//	                    flag? "on":"off", snr, freqOff);
-}
-
-static
-void	fibQuality	(int16_t q, void *ctx) {
-//	fprintf (stderr, "fic quality = %d\n", q);
-}
-
-static
-void	mscQuality	(int16_t fe, int16_t rsE, int16_t aacE, void *ctx) {
-//	fprintf (stderr, "msc quality = %d %d %d\n", fe, rsE, aacE);
-}
-
 int	main (int argc, char **argv) {
 // Default values
 uint8_t		theMode		= 1;
@@ -233,12 +219,18 @@ int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
+#elif	HAVE_SDRPLAY_V3	
+int16_t		GRdB		= 30;
+int16_t		lnaState	= 4;
+int16_t		ppmOffset	= 0;
+const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
 #elif	HAVE_AIRSPY
 int16_t		gain		= 20;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "T:D:d:M:B:P:A:C:G:p:bO:";
 #endif
+callbacks	the_callBacks;
 std::string	soundChannel	= "default";
 int16_t		latency		= 10;
 int16_t		timeSyncTime	= 10;
@@ -254,6 +246,14 @@ RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
 std::string image_path;
 Mat img;
 #endif
+	the_callBacks. signalHandler            = syncsignalHandler;
+        the_callBacks. timeHandler              = timeHandler;
+        the_callBacks. ensembleHandler          = ensemblenameHandler;
+        the_callBacks. audioOutHandler          = audioOutHandler;
+        the_callBacks. programnameHandler       = programnameHandler;
+	the_callBacks. dynamicLabelHandler	= dynamicLabelHandler;
+        the_callBacks. motdataHandler           = motdataHandler;
+
 	std::cerr << "dab_xxx-cli,\n \
 	                Copyright 2020 J van Katwijk, Lazy Chair Computing\n";
 	timeSynced.	store (false);
@@ -357,7 +357,24 @@ Mat img;
 	         ppmOffset	= atoi (optarg);
 	         break;
 
-#elif	HAVE_AIRSPY
+#elif	HAVE_SDRPLAY
+	      case 'G':
+	         GRdB		= atoi (optarg);
+	         break;
+
+	      case 'L':
+	         lnaState	= atoi (optarg);
+	         break;
+
+	      case 'Q':
+	         autogain	= true;
+	         break;
+
+	      case 'p':
+	         ppmOffset	= atoi (optarg);
+	         break;
+
+#elif	HAVE_AIRSPY_V3
 	      case 'G':
 	         gain		= atoi (optarg);
 	         break;
@@ -397,6 +414,15 @@ Mat img;
 	                                      autogain,
 	                                      0,
 	                                      0);
+#ifdef	HAVE_SDRPLAY_V3
+	   theDevice	= new sdrplayHandler_v3 (&_I_Buffer,
+	                                         frequency,
+	                                         ppmOffset,
+	                                         GRdB,
+	                                         lnaState,
+	                                         autogain,
+	                                         0,
+	                                         0);
 #elif	HAVE_AIRSPY
 	   theDevice	= new airspyHandler (&_I_Buffer,
 	                                     frequency,
@@ -436,17 +462,7 @@ Mat img;
 //	and with a sound device we now can create a "backend"
 	theRadio	= new dabProcessor (&_I_Buffer,
 	                                    theMode,
-	                                    syncsignalHandler,
-	                                    systemData,
-	                                    ensemblenameHandler,
-	                                    programnameHandler,
-	                                    nullptr,
-	                                    fibQuality,
-	                                    pcmHandler,
-	                                    dataOut_Handler,
-	                                    programdataHandler,
-	                                    mscQuality,
-	                                    motdataHandler,	// MOT in PAD
+	                                    &the_callBacks,
 	                                    nullptr		// Ctx
 	                          );
 	if (theRadio == nullptr) {

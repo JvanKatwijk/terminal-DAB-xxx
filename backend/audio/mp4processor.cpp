@@ -65,21 +65,15 @@
   */
 
 	mp4Processor::mp4Processor (int16_t		bitRate,
-	                            audioOut_t		soundOut,
-	                            dataOut_t		dataOut,
-	                            programQuality_t	mscQuality,
-	                            motdata_t		motdata_Handler,
+	                            callbacks		*the_callBacks,
 	                            void		*ctx):
-	                                  my_padHandler (dataOut,
-	                                                 motdata_Handler,
+	                                  my_padHandler (the_callBacks,
 	                                                 ctx),
 	                                  my_rsDecoder (8, 0435, 0, 1, 10),
-	                                     aacDecoder (soundOut, ctx) {
+	                                     aacDecoder (the_callBacks, ctx) {
 
-	this	-> soundOut	= soundOut;
-	this	-> mscQuality	= mscQuality;	//
-	this	-> ctx		= ctx;
 	this	-> bitRate	= bitRate;	// input rate
+	this	-> ctx		= ctx;
 	RSDims			= bitRate / 8;
 	superFramesize		= 110 * (bitRate / 8);
 	frameBytes. resize (RSDims * 120);	// input

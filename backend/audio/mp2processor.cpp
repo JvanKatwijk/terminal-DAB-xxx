@@ -218,13 +218,9 @@ struct quantizer_spec quantizer_table [17] = {
 ////////////////////////////////////////////////////////////////////////////////
 
 	mp2Processor::mp2Processor (int16_t		bitRate,
-	                            audioOut_t		soundOut,
-	                            dataOut_t		dataOut,
-	                            programQuality_t	mscQuality,
-	                            motdata_t		motdata_Handler,
+	                            callbacks		*the_callBacks,
 	                            void		*ctx):
-	                                       my_padHandler (dataOut,
-	                                                      motdata_Handler,
+	                                       my_padHandler (the_callBacks,
 	                                                      ctx) {
 int16_t	i, j;
 int16_t *nPtr = &N [0][0];
@@ -243,9 +239,6 @@ int16_t *nPtr = &N [0][0];
 	      V [i][j] = 0;
 
 	this	-> bitRate	= bitRate;
-	this	-> soundOut	= soundOut;
-	this	-> dataOut	= dataOut;
-	this	-> mscQuality	= mscQuality;
 	Voffs		= 0;
 	baudRate	= 48000;	// default for DAB
 	MP2framesize	= 24 * bitRate;	// may be changed
@@ -379,8 +372,6 @@ int32_t table_idx;
 
 	numberofFrames ++;
 	if (numberofFrames >= 50) {
-	   if (mscQuality != nullptr)
-	      mscQuality (2 * (50 - errorFrames), 0, 0, ctx);
 	   numberofFrames	= 0;
 	   errorFrames		= 0;
 	}
@@ -601,10 +592,6 @@ int16_t vLength = 24 * bitRate / 8;
 	   if (MP2Header_OK == 2) {
 	      addbittoMP2 (MP2frame, v [i], MP2bitCount ++);
 	      if (MP2bitCount >= lf) {
-#ifdef	AAC_OUT
-	         soundOut ((int16_t *)(&MP2frame [0]), MP2bitCount,
-	                               0, false, nullptr);
-#else
 	         int16_t sample_buf [KJMP2_SAMPLES_PER_FRAME * 2];
 	         bool stereo;
 	         if (mp2decodeFrame (MP2frame, sample_buf, &stereo)) {
@@ -612,7 +599,6 @@ int16_t vLength = 24 * bitRate / 8;
 	                    2 * (int32_t)KJMP2_SAMPLES_PER_FRAME,
 	                    baudRate, stereo);
 	         }
-#endif
 
 	         MP2Header_OK = 0;
 	         MP2headerCount = 0;
@@ -656,7 +642,7 @@ uint8_t	newbyte = (01 << bitnr);
 }
 
 void	mp2Processor::output (int16_t *buffer, int size, int rate, bool stereo) {
-	if (soundOut != nullptr)
-	   soundOut (buffer, size, rate, stereo, ctx);
+	if (the_callBacks -> audioOutHandler != nullptr)
+	   the_callBacks -> audioOutHandler (buffer, size, rate, stereo, ctx);
 }
 

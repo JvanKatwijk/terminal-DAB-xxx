@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2013 .. 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of dab-cmdline
+ *    This file is part of dab-xxx-cli
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
@@ -38,10 +38,7 @@
 //
 //	fragmentsize == Length * CUSize
 	audioBackend::audioBackend	(audiodata	*d,
-	                                 audioOut_t	soundOut,
-	                                 dataOut_t	dataOut,
-	                                 programQuality_t mscQuality,
-	                                 motdata_t	motdata_Handler,
+	                                 callbacks	*the_callBacks,
 	                                 void		*ctx):
 	                                     virtualBackend (d -> startAddr,
 	                                                     d -> length),
@@ -75,17 +72,12 @@ int32_t i, j;
 //	                        shortForm ? "uep_protection" : "eep_protection");
 	if (dabModus == DAB) 
 	   our_backendBase = new mp2Processor (bitRate,
-	                                        soundOut,
-	                                        dataOut,
-	                                        mscQuality,
-	                                        motdata_Handler, ctx);
+	                                       the_callBacks,
+	                                       ctx);
 	else
 	if (dabModus == DAB_PLUS) 
 	   our_backendBase = new mp4Processor (bitRate,
-	                                        soundOut,
-	                                        dataOut,
-	                                        mscQuality,
-	                                        motdata_Handler, ctx);
+	                                       the_callBacks, ctx);
 	else		// cannot happen
 	   our_backendBase = new backendBase ();
 

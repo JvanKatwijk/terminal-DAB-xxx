@@ -18,8 +18,8 @@ selection of one single service is somewhat limited in practive.
 While it is reasonable to stay for some time within the same channel,
 the omission of the ability to select another service was hindering the use.
 
-Two versions - merely differencing in the "main" control program
-are here.
+Two versions - merely differencing in the "main" control program -
+addressing this issue are here.
 
 	a. one version similar to example 5 of the "dab-cmdline" examples,
 	   i.e. a command line version, with the ability to select the
@@ -27,8 +27,8 @@ are here.
 	   (use "+" for next, and "-" for previous, followed by a return);
 
 	b. the second version goes one step further.
-	   Using the curses library the list of services remains visible.
-	   In the list the currently playing service
+	   Using the *curses* library, the list of services remains visible.
+	   In the list the **currently playing service**
 	   is marked and with the "up" and "down" arrows one can move
 	   the selection along the list (an acknowledgment with the
 	   return or space key instructs the software to start the
@@ -64,32 +64,6 @@ If running the "regular" version, specifying a service name is required,
 if running the "curses" version, if no service name is specified, the
 first element of the (alfabetically sorted) list is taken.
 
-------------------------------------------------------------------------
-faad2.8 and Ubuntu 20.04
-------------------------------------------------------------------------
-
-While the past years the faad library was used for the transformation of the
-AAC data to PCM samples. It seems that the version of the faad library
-that is default in the repositories of Ubuntu 20 (and may be other
-distributions) is incompatible with the AAC.
-
-It is certainly possible to download - or create - the faad-2.8 library
-that has been in use for years, however, there is an easier
-solution:
-For the dab-xxx-cli program one may choose to use the fdkaac library
-instead.
-
-Install the library on Ubuntu
-
-	sudo apt-get install libfdk-aac-dev
-
-Use as cmake option
-
-	-DFDK_LIB=ON
-
-The software will then use the fdkaac library for the decoding of the AAC 
-frames.
-
 -------------------------------------------------------------------------
 Supported devices
 -------------------------------------------------------------------------
@@ -100,12 +74,14 @@ Currently, the following devices are supported
 
 	b. RTLSDR devices (also known as DABsticks)
 
-	c. SDRplay devices (using the 2.13 device library)
+	c. SDRplay devices using the 2.13 device library
 
-	d. AIRSpy devices
+	d. SDRplay device, using the 3.06/7 device library
+
+	e. AIRSpy devices
 
 ---------------------------------------------------------------------------
-Building an executable
+Loading required libraries
 --------------------------------------------------------------------------
 
 Load the libraries, e.g. for Debian (Ubuntu) systems
@@ -121,10 +97,6 @@ Load the libraries, e.g. for Debian (Ubuntu) systems
 	sudo apt-get install zlib1g-dev 
 	sudo apt-get install libusb-1.0-0-dev
 	sudo apt-get install libsamplerate0-dev
-	sudo apt-get install libfaad-dev
-
-Note that Ubuntu 20.04 repositories provide as default an incompatible libfaad,
-libfaad-2.8 is the correct version.
 
 For showing slides one has to install
 
@@ -134,22 +106,53 @@ For runnig the curses version one has to install
 
 	sudo apt-get install curses
 
+While the past years the faad library was used for the transformation of the
+AAC data to PCM samples. It seems that the version of the faad library
+that is default in the repositories of Ubuntu 20 (and may be other
+distributions) is incompatible with the AAC.
+
+On older Ubuntu systems, one might load
+
+	sudo apt-get install libfaad-dev
+
+It is certainly possible to download - or create - the faad-2.8 library
+that has been in use for years, however, there is an easier
+solution:
+For the dab-xxx-cli program one may choose to use the fdkaac library
+instead.
+
+Install the library on Ubuntu
+
+	sudo apt-get install libfdk-aac-dev
+
+------------------------------------------------------------------------
+Building an executable
+------------------------------------------------------------------------
+
 Of course, the support library for the device of choice need to
 be installed as well.
 
-if all libraries are installed, the process is simple,
+if all libraries are installed, creating a makefile is by calling 
+cmake with the right parameters
 
 	mkdir build
 	cd build
 	cmake .. -DXXX=ON [-DYYY=OFF] [-DZZZ=OFF]
-	make
-	sudo make install
 
-A device name should be passed as parameter, e.g. -DRTLSDR=ON or
--DSDRPLAY=ON.
+A device name should be passed as parameter, e.g. one of
+	-DRTLSDR=ON 
+	-DSDRPLAY=ON.
+	-DSDRPLAY-V3=ON
+	-DAIRSPY=ON
+	-DPLUTO=ON
 
-The result is an executable dab-XXX-cli, where XXX is the name
-of the device.
+
+To let the software know that fdk-aac is the AAC decoder of choice, use
+
+	-DFDK_LIB=ON
+
+The software will then use the fdkaac library for the decoding of the AAC 
+frames.
 
 By default, the dab-xxx-cli with curses support is selected,
 use
@@ -171,6 +174,17 @@ When compiling on/for Linux on an X64, one might use
 as additional parameter. The option allows generation of 
 archtecture-specific  code for the deconvolution.
 
+The result is an executable dab-XXX-cli, where XXX is the name
+of the device.
+
+------------------------------------------------------------------------
+The last step
+------------------------------------------------------------------------
+
+The last step is merely calling "make" for the generated makefile(s)
+
+	make
+	sudo make install
 -------------------------------------------------------------------------
 Copyrights
 -------------------------------------------------------------------------
