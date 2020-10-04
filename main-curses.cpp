@@ -598,7 +598,6 @@ Mat img;
 	   }
 
 	   currentService	= ad. serviceName;
-	   theRadio	-> reset_msc ();
 	   theRadio	-> set_audioChannel (&ad);
 
 	   bool		breaker	= false;

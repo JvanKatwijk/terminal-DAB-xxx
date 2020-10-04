@@ -278,6 +278,7 @@ void    dabProcessor::reset_msc (void) {
 }
 
 void    dabProcessor::set_audioChannel (audiodata *d) {
+	my_mscHandler. reset		();
         my_mscHandler. set_audioChannel (d);
 }
 
