@@ -1,36 +1,40 @@
 
 -------------------------------------------------------------------------
-dab-xxx-cli:
+terminal-DAB-xxx
 A terminal-based dab decoding program, with slides and service selection.
 -------------------------------------------------------------------------
 
-![dab-cmdline](/dab-xxx-cli-2.png?raw=true)
-![dab-cmdline](/dab-cli-curses.png?raw=true)
+![dab-cmdline](/terminal-dab-1.png?raw=true)
 
-As well-known, Qt-DAB is a large GUI driven program with a
+As well-known, **Qt-DAB** is a large GUI driven program with a
 large amount of options and widgets.
-At the other end of the spectrum, there is dab-cmdline with its example 2,
-a  straight forward command line driven program where, once the
-program is started, **everything**  - device, channel and even service -
-is frozen.
+**terminal-DAB** is - different from Qt-DAB - a **terminal-based**  program.
+The name should be read as **terminal-DAB-devicename**, the instances
+of the program have "xxx" replaced by the device name
 
-For day to day use, the example 2 version from the dab-cmdline repository
-is too limited, stopping and restarting the program for changing the selected
-service does not make much sense.
-dab-xxx-cli is a first step towards a program for the terminal handling this.
-While the selected device is chosen in the configuration to build
-and executable, and the channel is passed as parameter to the program
+terminal-DAB uses the curses library for displaying the information
+on the terminal (see the picture).
+The name of the channel, the name of the ensemble, the currently playing
+service and the time - derived from the DAB stream are displayed
+on the top of the terminal, the dynamic label - if any - is
+displayed at the bottom of the terminal.
 
-	a. once started, it shows the services from the ensemble in
-	   the selected channel on the terminal. 
-	   The selected service is marked by a "*".
-	   Up- and down arrows (with a return as acknowledgment)
-	   can be used to select a service or to change from one
-	   service to another.
+![dab-cmdline](/terminal-dab-2.png?raw=true)
 
-	b. it obviously shows the dynamic label, but on a separate widget
-	   it shows slides that are transmitted as part of the service.
-	   (as shown on the picture above).
+If **PICTURES**  is configured, slides, that are encoded in the
+**Program Associated Data** part of the DAB data, are made visible
+in a separate widget.
+
+The program supports:
+
+	selecting a service and scanning though the list of
+	services. The "current" service is marked by an asterisks.
+	The up- and down arrows can be used to scan through the list.
+
+	scanning though either the full list of channels in Band III
+	or through a user defined list of channels.
+	If no user defined list is specified, the channels in Band III
+	are taken. 
 
 ------------------------------------------------------------------------
 Command line parameters
@@ -41,21 +45,20 @@ given. One gets a list by starting the program without any parameter.
 
 Normal use is
 
-	dab-xxx-cli -C XXX -P YYY -G ZZZ -Q 
+	dab-xxx-cli -C XXX -B YY1 -B YY2 ... -B YYn -G -Q
 
 where
 
 	a. -C XXX is the channel one wants to listen to
 
-	b. -P YYY is a string representing a reasonable prefix of the servicename
+	b. each channel to be used in scanning through the list is specified
+	   by -B channelName
+ 
 	c. -G ZZZ, where Z is a valid gain value, which obviously depends on the device,
 
 	d. -Q is the autogain setting
 
 For other parameters, see the output of the program
-
-If no service name is selected, the
-first element of the (alfabetically sorted) list is taken.
 
 -------------------------------------------------------------------------
 Supported devices

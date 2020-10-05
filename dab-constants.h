@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2014
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-xxx--cli
+ *    This file is part of t-DAB-xxx
  *
- *    dab-xxx-cli is free software; you can redistribute it and/or modify
+ *    t-DAB-xxx is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-xxx-cli is distributed in the hope that it will be useful,
+ *    t-DAB-xxx is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-xxx-cli; if not, write to the Free Software
+ *    along with t-DAB-xxx; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 //
@@ -61,8 +61,6 @@ using namespace std;
 #define	Mhz(x)		(Khz (x) * 1000)
 #define	MHz(x)		(KHz (x) * 1000)
 #define	mHz(x)		(kHz (x) * 1000)
-
-#define	CURRENT_VERSION	"2.0alfa"
 
 #define		DAB		0100
 #define		DAB_PLUS	0101

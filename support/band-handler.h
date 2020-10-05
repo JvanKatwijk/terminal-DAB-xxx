@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2013, 2014, 2015, 2016, 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline
+ *    This file is part of t-DAB-xxx
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    t-DAB-xxx is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    t-DAB-xxx is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with t-DAB-xxx; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -34,10 +34,13 @@
 
 class bandHandler {
 public:
-		bandHandler		(void);
-		~bandHandler		(void);
-int32_t		Frequency 		(uint8_t band, std::string Channel);
-std::string	nextChannel		(uint8_t dabBand, std::string Channel);
+			bandHandler		(uint8_t);
+			~bandHandler		();
+	int32_t		Frequency 		(const std::string &Channel);
+	std::string	nextChannel		(const std::string &Channel);
+	std::string	prevChannel		(const std::string &Channel);
+private:
+	uint8_t	theBand;
 };
 #endif
 

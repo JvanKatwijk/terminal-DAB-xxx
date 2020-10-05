@@ -4,20 +4,20 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-xxx-cli
+ *    This file is part of the terminal-DAB
  *
- *    dab-xxx-cli is free software; you can redistribute it and/or modify
+ *    terminal-DAB is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-xxx-cli is distributed in the hope that it will be useful,
+ *    terminal-DAB is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-xxx-cli; if not, write to the Free Software
+ *    along with terminal-DAB; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -68,23 +68,28 @@ using std::endl;
 
 //
 //	messages
-//	   newService	string
-//	   newTime	string
-//	   newPicture	string
-	typedef struct {
-	   int key;
-	   std::string string;
-	} message;
-	std::queue<message> messageQueue;
-
+typedef struct {
+   int key;
+   std::string string;
+} message;
+std::queue<message> messageQueue;
 static
 Semaphore	theLock;
-	
-#define	S_SET_NEXTSERVICE	0100
-#define	S_SET_PREVSERVICE	0101
-#define	S_ACKNOWLEDGE		0102
-#define	S_NEW_TIME		0103
-#define	S_NEW_PICTURE		0104
+
+#define	S_START			0100
+#define	S_QUIT			0101
+#define	S_SET_NEXTCHANNEL	0102
+#define	S_SET_PREVCHANNEL	0103
+#define	S_SET_NEXTSERVICE	0104
+#define	S_SET_PREVSERVICE	0105
+#define	S_TIMER_TICK		0106
+#define	S_ACKNOWLEDGE		0200
+#define	S_NEW_TIME		0201
+#define	S_NEW_PICTURE		0203
+#define	S_ENSEMBLE_FOUND	0300
+#define	S_SERVICE_NAME		0301
+#define	S_DYNAMICLABEL		0302
+
 //	some offsets 
 #define	ENSEMBLE_ROW	4
 #define	ENSEMBLE_COLUMN	4
@@ -92,24 +97,26 @@ Semaphore	theLock;
 #define	SERVICE_ROW	(ENSEMBLE_ROW + 1)
 #define	SERVICE_COLUMN	10
 #define	DOT_COLUMN	(SERVICE_COLUMN - 2)
+
+
 void    printOptions	();	// forward declaration
 void	listener	();
 void	printServices	();
 static
 int		index_currentService;
-static
-int		index_previousService;
-static
-int		indexFor		(const std::string &s);
 //
 //	we deal with callbacks from different threads. So, if you extend
 //	the functions, take care and add locking whenever needed
 static
 std::atomic<bool> run;
-
+static
+deviceHandler	*theDevice	= nullptr;
+static
+std::string	deviceName	= "";
 static
 dabProcessor	*theRadio	= nullptr;
 
+bandHandler	dabBand (BAND_III);
 static
 std::atomic<bool>timeSynced;
 
@@ -127,8 +134,6 @@ audioBase	*soundOut	= nullptr;
 
 static
 std::string	currentService	= "";
-
-//int32_t		serviceIdentifier	= -1;
 
 static void sighandler (int signum) {
 	fprintf (stderr, "Signal caught, terminating!\n");
@@ -151,23 +156,15 @@ message m;
 	theLock. Release ();
 }
 
-void	writeMessage (int row, int column, const char *message) {
-	for (uint16_t i = 0; message [i] != 0; i ++)
-	   mvaddch (row, column + i, message [i]);
-	move (0, 0);
-	refresh ();
-}
-//
-//	This function is called whenever the dab engine has taken
-//	some time to gather information from the FIC bloks
-//	the Boolean b tells whether or not an ensemble has been
-//	recognized, the names of the programs are in the 
-//	ensemble
 static
 void	ensemblenameHandler (std::string name, int Id, void *userData) {
-	writeMessage (0, 10, name. c_str ());
+message m;
 	ensembleRecognized. store (true);
 	ensembleName = name;
+	m. key		= S_ENSEMBLE_FOUND;
+	m. string	= name;
+	messageQueue. push (m);
+	theLock. Release ();
 }
 
 std::vector<std::string>
@@ -187,40 +184,35 @@ bool	inserted = false;
 	   res. push_back (newName);
 	return res;
 }
-	
+
+static
 std::vector<std::string> serviceNames;
-#include	<bits/stdc++.h>
 
 static
 void	programnameHandler (std::string s, int SId, void *userdata) {
+message m;
 	for (std::vector<std::string>::iterator it = serviceNames.begin();
 	             it != serviceNames. end(); ++it)
 	   if (*it == s)
 	      return;
 	serviceNames = insert (serviceNames, s);
+	m. key		= S_SERVICE_NAME;
+	m. string	= s;
+	messageQueue. push (m);
+	theLock. Release ();
 }
 
-//	The function is called from within the library with
-//	a string, the so-called dynamic label
-static
-char	theLabel [255];
 static
 void	dynamicLabelHandler (std::string dynamicLabel, void *ctx) {
-uint16_t i;
-	(void)ctx;
-	for (i = 0; i < dynamicLabel. size (); i ++)
-	   theLabel [i] = dynamicLabel. c_str () [i]; 
-	for (; i < 255; i ++)	
-	   theLabel [i] = ' ';
-	theLabel [80] = 0;
-	writeMessage (LINES - 1, 0, theLabel);
+message m;
+	m. key		= S_DYNAMICLABEL;
+	m. string	= dynamicLabel;
+	messageQueue. push (m);
+	theLock. Release ();
 }
 
 #ifdef	__SHOW_PICTURES__
-//	The function is called from the MOT handler, with
-//	as parameters the filename where the picture is stored
-//	d denotes the subtype of the picture 
-//	typedef void (*motdata_t)(std::string, int, void *);
+static
 void	motdataHandler (std::string s, int d, void *ctx) {
 	(void)d; (void)ctx;
 	message m;
@@ -230,11 +222,11 @@ void	motdataHandler (std::string s, int d, void *ctx) {
 	theLock. Release ();
 }
 #else
-void	motdataHandler (std::string s, int d, void *ctx) {
-	(void)s; (void)d; (void)ctx;
+void    motdataHandler (std::string s, int d, void *ctx) {
+        (void)s; (void)d; (void)ctx;
 }
 #endif
-//
+
 static
 void	audioOutHandler (int16_t *buffer, int size, int rate,
 	                              bool isStereo, void *ctx) {
@@ -248,49 +240,149 @@ static bool isStarted	= false;
 	soundOut	-> audioOut (buffer, size, rate);
 }
 
-int	main (int argc, char **argv) {
-// Default values
+void	timerSignal	(int delay) {
+message m;
+	sleep (delay);
+	m. key	= S_TIMER_TICK;
+	m. string	= "";
+	messageQueue. push (m);
+	theLock. Release ();
+}
+	
+void	writeMessage (int row, int column, const char *message) {
+	for (uint16_t i = 0; message [i] != 0; i ++)
+	   mvaddch (row, column + i, message [i]);
+	move (0, 0);
+	refresh ();
+}
+
+void	showHeader	() {
+std::string text	= std::string ("terminal-DAB-") + deviceName;
+	writeMessage (0, 20, text. c_str ());
+        writeMessage (1, 1, "Use + and - keys to scan throught the channels");
+        writeMessage (2, 1, "Use up and down arrow keys to scan throught the services");
+	for (int i = 5; i < COLS - 5; i ++)
+	   writeMessage (3, i, "=");
+}
+
+void	showEnsemble	(std::string theChannel) {
+std::string text	= theChannel + 
+	                  std::string (": Ensemble: ") +
+	                  ensembleName;
+        writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, text. c_str ());
+}
+
+void	showChannel	(std::string theChannel) {
+	writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, theChannel. c_str ());
+	for (int i = ENSEMBLE_COLUMN + 4; i < COLS; i ++)
+	   writeMessage (ENSEMBLE_ROW, i, " ");
+}
+
+void	showServices	() {
+	for (uint16_t i = 0; i < serviceNames. size (); i ++)
+           writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
+                                           serviceNames [i]. c_str ());
+}
+
+void	clearServices	() {
+	for (uint16_t i = 0; i < serviceNames. size (); i ++)
+           writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
+                                           "                ");
+}
+
+void	show_playing	(const std::string &s) {
+std::string text	= std::string (" now playing ") + s;
+	  writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text. c_str ());
+}
+
+void	mark_service (int index, const std::string &s) {
+	writeMessage (SERVICE_ROW + index_currentService,
+                                              DOT_COLUMN, s. c_str ());
+}
+
+void	show_dynamicLabel	(const std::string dynLab) {
+char text [COLS];
+int	i;
+
+	for (i = 0; (i < dynLab. size ()) && (i < COLS - 1); i ++)
+	   text [i] = dynLab. at (i);
+	for (; i < COLS - 1; i ++)
+	   text [i] = ' ';
+	text [COLS - 1] = 0;
+	writeMessage (LINES - 1, 0, text);
+}
+std::vector<std::string> userChannels;
+static
+std::string	nextChannel	(const std::string &s, bool dir) {
+int size = userChannels. size ();
+
+	if (size > 0) {
+	   for (int i = 0; i < size; i ++) {
+	      if (userChannels. at (i) == s) {
+	         if (dir)
+	            return userChannels. at ((i + 1) % size);
+	         else
+	            return userChannels. at ((i - 1 + size) % size);
+	      }
+	   }
+	}
+	else
+	if (dir)
+	   return dabBand. nextChannel (s);
+	return dabBand. prevChannel (s);
+}
+	   
+void	selectService	(const std::string &s) {
+audiodata ad;
+
+	theRadio -> dataforAudioService (s. c_str (), &ad);
+	if (!ad. defined) {
+	   show_playing ("no data");
+	   return;
+	}
+
+	currentService       = ad. serviceName;
+	theRadio     -> set_audioChannel (&ad);
+	show_playing (s);
+}
+
+callbacks	the_callBacks;
+std::string	theChannel	= "12C";
 uint8_t		theMode		= 1;
-std::string	theChannel	= "11C";
-uint8_t		theBand		= BAND_III;
+
+int	main (int argc, char **argv) {
 bool		autogain	= false;
 #ifdef	HAVE_WAVFILES
 const char	*optionsString	= "F:P:";
 std::string	fileName;
 #elif	HAVE_PLUTO
 int16_t		gain		= 60;
-const char	*optionsString	= "T:D:d:M:B:P:A:C:G:QO:";
+const char	*optionsString	= "B:D:d:A:C:G:Q";
 #elif	HAVE_RTLSDR
 int16_t		gain		= 60;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "T:D:d:M:B:P:A:C:G:QO:";
+const char	*optionsString	= "B:D:d:A:C:G:Q";
 #elif	HAVE_SDRPLAY	
 int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
+const char	*optionsString	= "B:D:d:P:A:C:G:L:Q";
 #elif	HAVE_SDRPLAY_V3	
 int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "T:D:d:M:B:P:A:C:G:L:Qp:O:";
+const char	*optionsString	= "B:D:d:P:A:C:G:L:Q";
 #elif	HAVE_AIRSPY
 int16_t		gain		= 20;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "T:D:d:M:B:P:A:C:G:p:bO:";
+const char	*optionsString	= "B:D:d:P:A:C:G:b";
 #endif
-callbacks	the_callBacks;
 std::string	soundChannel	= "default";
 int16_t		latency		= 10;
-int16_t		timeSyncTime	= 10;
-int16_t		freqSyncTime	= 5;
 int		opt;
 struct sigaction sigact;
-bandHandler	dabBand;
-deviceHandler	*theDevice	= nullptr;
 bool	err;
-int	theDuration		= -1;	// no limit
 RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
 #ifdef	__SHOW_PICTURES__
 std::string image_path;
@@ -311,60 +403,28 @@ Mat img;
 	timesyncSet.	store (false);
 	run.		store (false);
 //	std::wcout.imbue(std::locale("en_US.utf8"));
+
 	if (argc == 1) {
 	   printOptions ();
 	   exit (1);
 	}
 
-#ifdef	__SHOW_PICTURES__
-//	newPicture. store (true);
-//	thePicture	= "/home/jan/dab-cmdline/dab-cmdline.png";
-#endif
 	std::setlocale (LC_ALL, "en-US.utf8");
 
 	fprintf (stderr, "options are %s\n", optionsString);
 	while ((opt = getopt (argc, argv, optionsString)) != -1) {
 	   switch (opt) {
-	      case 'T':
-	         theDuration	= 60 * atoi (optarg);	// minutes
-	         break;
-	      case 'D':
-	         freqSyncTime	= atoi (optarg);
-	         break;
-
-	      case 'd':
-	         timeSyncTime	= atoi (optarg);
-	         break;
-
-	      case 'M':
-	         theMode	= atoi (optarg);
-	         if (!((theMode == 1) || (theMode == 2) || (theMode == 4)))
-	            theMode = 1; 
-	         break;
-
-	      case 'B':
-	         theBand = std::string (optarg) == std::string ("L_BAND") ?
-	                                                 L_BAND : BAND_III;
-	         break;
-
-	      case 'P':
-	         currentService	= optarg;
-	         break;
-
-	      case 'O':
-	         soundOut       = new fileSink (std::string (optarg), &err);
-                 if (!err) {
-                    std::cerr << "sorry, could not open file\n";
-                    exit (32);
-                 }
-	         break;
-
 	      case 'A':
 	         soundChannel	= optarg;
 	         break;
 
+	      case 'B':
+	         userChannels. push_back (std::string (optarg));
+	         fprintf (stderr, "%s \n", optarg);
+	         break;
+
 	      case 'C':
-	         theChannel	= std::string (optarg);
+	         theChannel = std::string (optarg);
 	         fprintf (stderr, "%s \n", optarg);
 	         break;
 
@@ -420,10 +480,6 @@ Mat img;
 	         autogain	= true;
 	         break;
 
-	      case 'p':
-	         ppmOffset	= atoi (optarg);
-	         break;
-
 #elif	HAVE_AIRSPY
 	      case 'G':
 	         gain		= atoi (optarg);
@@ -436,11 +492,6 @@ Mat img;
 	      case 'b':
 	         rf_bias	= true;
 	         break;
-
-	      case 'p':
-	         ppmOffset	= atoi (optarg);
-	         break;
-
 #endif
 	      default:
 	         fprintf (stderr, "Option %c not understood\n", opt);
@@ -449,11 +500,28 @@ Mat img;
 	   }
 	}
 //
+	if (theChannel == std::string ("")) {
+	   fprintf (stderr, "please specify a channel here\n");
+	   exit (21);
+	}
+
+	if (userChannels. size () > 0) {
+	   bool found = false;
+	   for (auto s: userChannels) {
+	      if (s == theChannel) {
+	         found = true;
+	         break;
+	      }
+	   }
+	   if (!found)
+	      userChannels. push_back (theChannel);
+	}
+
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;
 
-	int32_t frequency	= dabBand. Frequency (theBand, theChannel);
+	int32_t frequency	= dabBand. Frequency (theChannel);
 	try {
 #ifdef	HAVE_SDRPLAY_V3
 	   theDevice	= new sdrplayHandler_v3 (&_I_Buffer,
@@ -464,6 +532,7 @@ Mat img;
 	                                         autogain,
 	                                         0,
 	                                         0);
+	deviceName	= "sdrplay";
 #elif	HAVE_SDRPLAY
 	   theDevice	= new sdrplayHandler (&_I_Buffer,
 	                                      frequency,
@@ -473,22 +542,26 @@ Mat img;
 	                                      autogain,
 	                                      0,
 	                                      0);
+	deviceName	= "sdrplay";
 #elif	HAVE_AIRSPY
 	   theDevice	= new airspyHandler (&_I_Buffer,
 	                                     frequency,
 	                                     ppmOffset,
 	                                     gain,
 	                                     rf_bias);
+	deviceName	= "airspy";
 #elif	HAVE_PLUTO
 	   theDevice	= new plutoHandler	(&_I_Buffer,
 	                                         frequency,
 	                                         gain, autogain);
+	deviceName	= "pluto";
 #elif	HAVE_RTLSDR
 	   theDevice    = new rtlsdrHandler (&_I_Buffer,
 	                                     frequency,
                                              ppmOffset,
                                              gain,
                                              autogain);
+	deviceName	= "rtlsdr";
 #elif	HAVE_WAVFILES
 	   theDevice	= new wavFiles	(fileName. c_str (),
 	                                 &_I_Buffer, nullptr);
@@ -520,203 +593,180 @@ Mat img;
 	                          );
 	if (theRadio == nullptr) {
 	   std::cerr << "sorry, no radio available, fatal\n";
-	   exit (4);
-	}
-
-	theRadio	-> start ();
-	theDevice	-> restartReader (frequency);
-
-	timesyncSet.		store (false);
-	ensembleRecognized.	store (false);
-
-	while (!timeSynced. load () && (--timeSyncTime >= 0))
-	   sleep (1);
-
-	if (!timeSynced. load ()) {
-	   cerr << "There does not seem to be a DAB signal here" << endl;
-	   theDevice -> stopReader ();
-	   sleep (1);
-	   theRadio	-> stop ();
 	   delete theDevice;
-	   exit (22);
+	   delete soundOut;
+	   exit (34);
 	}
 
+//	here we start
 	initscr	();
 	cbreak	();
 	noecho	();
-	clear	();
+	message m;
+	m. key	= S_START;
+	m. string	= "";
+	sleep (2);
+	messageQueue. push (m);
+	theLock. Release ();
 
-	writeMessage (0, 0,  "there might be a DAB signal here");
-
-	while (!ensembleRecognized. load () &&
-	                             (--freqSyncTime >= 0)) {
-	   sleep (1);
-	}
-
-	if (!ensembleRecognized. load ()) {
-	   writeMessage (LINES - 1, 0, "no ensemble found, fatal");
-	   theDevice -> stopReader ();
-	   sleep (1);
-	   theRadio	-> stop ();
-	   delete theDevice;
-	   delete soundOut;
-	   endwin ();
-	   exit (22);
-	}
-
-	writeMessage (0, 0, "                                    ");
-	writeMessage (0, 10, "DAB command line decoder    ");
-	writeMessage (1, 1, "Use up and down arrow keys to scan throught the services");
-	writeMessage (2, 1, "acknowledge selection by space or return, q is quit");
-//
+	bool	channelChanged	= false;
 	run. store (true);
 	std::thread keyboard_listener = std::thread (&listener);
-
-	sleep (5);
-//
-//	clean the screen
-//	go for an ensemble
-	for (int i = 5; i < COLS - 5; i ++)
-	   mvaddch (3, i, '=');
-	char ensembleText [80];
-	sprintf (ensembleText, " %s: Ensemble: %s",
-	                                   theChannel. c_str (),
-	                                   ensembleName. c_str ());
-	writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, ensembleText);
-	for (uint16_t i = 0; i < serviceNames. size (); i ++)
-	   writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
-	                                   serviceNames [i]. c_str ());
-	sleep (2);
-	if (currentService == "")
-	   currentService = serviceNames [0];
-	
-	index_currentService = indexFor (currentService);
-	index_previousService	= index_currentService;
-	writeMessage (SERVICE_ROW + index_currentService, DOT_COLUMN, "*");
-	while (run. load () && theDuration != 0) {
-	   char text [255];
-	   sprintf (text, "now playing %s", currentService. c_str ());
-	   writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text);
-	   audiodata ad;
-	   theRadio -> dataforAudioService (currentService. c_str (), &ad);
-	   if (!ad. defined) {
-	      std::cerr << "something went wrong,  we cannot handle service " << 
-	                                         currentService << "\n";
-	      run. store (false);
-	      theRadio	-> stop ();
-	      delete theDevice;
-	      exit (22);
-	   }
-
-	   currentService	= ad. serviceName;
-	   theRadio	-> set_audioChannel (&ad);
-
-	   bool		breaker			= false;
-//	This polling loop is run while the service plays
-	   while (run. load ()) {
-	      while (!theLock. tryAcquire (200)) 
-	         if (!run. load ())
-	            break;
-
+	std::thread timer;
+	channelChanged	= true;
+	while (run. load ()) {
+	   while (!theLock. tryAcquire (200)) 
 	      if (!run. load ())
 	         break;
-	      message m = messageQueue. front ();
-	      switch (m. key) {
-	         case S_SET_NEXTSERVICE:
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                                DOT_COLUMN, " ");
-	            index_currentService = (index_currentService + 1) %
-	                                        serviceNames. size ();
-	            writeMessage (SERVICE_ROW + index_currentService, 
-	                                                   DOT_COLUMN, "*");
-	            break;
-	         case S_SET_PREVSERVICE:
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                                DOT_COLUMN, " ");
-	            index_currentService = (index_currentService - 1 -
-	                                          serviceNames. size ()) %
-	                                        serviceNames. size ();
-	            writeMessage (SERVICE_ROW + index_currentService, 
-	                                                DOT_COLUMN, "*");
-	            break;
-	         case S_ACKNOWLEDGE:
-	            if (index_currentService != index_previousService) {
-	               currentService = serviceNames [index_currentService];
-	               if (!img. empty ())
-	                  destroyAllWindows ();
-	               breaker = true;
-	               index_previousService = index_currentService;
-	            }
-	            break;
-	         case S_NEW_TIME:
-	            writeMessage (ENSEMBLE_ROW,
-	                    PLAYING_COLUMN + 30, m. string. c_str ());
-	            break;
+
+	   if (!run. load ())
+	      break;
+
+	   message m = messageQueue. front ();
+	   messageQueue. pop ();
+	   switch (m. key) {
+	      case S_START:
+	         theRadio	-> start ();
+                 theDevice	-> restartReader (frequency);
+	         index_currentService	= 0;
+	         showHeader ();
+	         break;
+
+	      case S_QUIT:
+	         run. store (false);
+	         break;
+
+	      case S_TIMER_TICK:
+	         if (index_currentService < (int)(serviceNames. size ())) {
+	            mark_service (index_currentService, "*");
+	            selectService (serviceNames [index_currentService]);
+	         }
+	         break;
+
+	      case S_SET_NEXTCHANNEL:
+	         theChannel	= nextChannel (theChannel, true);
 #ifdef	__SHOW_PICTURES__
-	         case S_NEW_PICTURE:
-	            image_path = samples::findFile (m. string);
+	         if (!img. empty ())
 	            destroyAllWindows ();
-	            img	= imread (image_path, IMREAD_COLOR);
-	            if (!img. empty ()) {
-	               imshow (image_path, img);
-	               (void)waitKey (500);
-//	               if (c != -1)
-//	                  fprintf (stderr, "key was %d\n", c);
-	            }
-	            break;
 #endif
-	         default:
-	            break;
-	      }
-	      messageQueue. pop ();
-	      
-	      if (breaker)
+	         theDevice	-> stopReader ();
+	         theRadio	-> stop ();
+	         ensembleRecognized. store (false);
+	         sleep (1);
+	         mark_service (index_currentService, " ");
+	         clearServices ();
+	         showChannel (theChannel);
+	         serviceNames. resize (0);
+	         sleep (1);
+	         theDevice	-> restartReader (dabBand. Frequency (theChannel));
+	         theRadio	-> start ();
+	         index_currentService = 0;
+	         channelChanged	= true;
+	         break;
+
+	      case S_SET_PREVCHANNEL:
+	         theChannel	= nextChannel (theChannel, false);
+#ifdef __SHOW_PICTURES__
+	         if (!img. empty ())
+	            destroyAllWindows ();
+#endif
+	         theDevice	-> stopReader ();
+	         theRadio	-> stop ();
+	         ensembleRecognized. store (false);
+	         sleep (1);
+	         mark_service (index_currentService, " ");
+	         clearServices ();
+	         showChannel (theChannel);
+	         serviceNames. resize (0);
+	         sleep (1);
+	         theDevice	-> restartReader (dabBand. Frequency (theChannel));
+	         theRadio	-> start ();
+	         index_currentService = 0;
+	         channelChanged	= true;
+	         break;
+
+	      case S_SET_NEXTSERVICE:
+	         channelChanged		= false;
+	         mark_service (index_currentService, " ");
+	         index_currentService = (index_currentService + 1) %
+	                                             serviceNames. size ();
+	         mark_service (index_currentService, "*");
+#ifdef	__SHOW_PICTURES__
+	         if (!img. empty ())
+	            destroyAllWindows ();
+#endif
+	         selectService (serviceNames [index_currentService]);
+	         break;
+
+	      case S_SET_PREVSERVICE:
+	         channelChanged		= false;
+	         mark_service (index_currentService, " ");
+	         index_currentService = (index_currentService - 1 +
+	                                             serviceNames. size ()) %
+	                                             serviceNames. size ();
+	         mark_service (index_currentService, "*");
+#ifdef	__SHOW_PICTURES__
+	         if (!img. empty ())
+	            destroyAllWindows ();
+#endif
+	         selectService (serviceNames [index_currentService]);
+	         break;
+
+	      case S_ACKNOWLEDGE:
+	         if (channelChanged) {
+	           mark_service (index_currentService, "*");
+	           selectService (serviceNames [index_currentService]);
+	           break;
+	         }
+	         break;
+
+	      case S_NEW_TIME:
+#ifdef	__SHOW_PICTURES__
+	         writeMessage (ENSEMBLE_ROW,
+                            PLAYING_COLUMN + 30, m. string. c_str ());
+	         break;
+	      case S_NEW_PICTURE:
+	         image_path = samples::findFile (m. string);
+	         destroyAllWindows ();
+	         img	= imread (image_path, IMREAD_COLOR);
+	         if (!img. empty ()) {
+	            imshow (image_path, img);
+	            (void)waitKey (500);
+	         }
+#endif
+	         break;
+
+	      case S_ENSEMBLE_FOUND:
+	         showEnsemble (theChannel);
+	         break;
+
+	      case S_SERVICE_NAME:
+	         showServices ();
+	         if (ensembleRecognized. load ()) {
+	            index_currentService = 0;
+	            mark_service (index_currentService, "*");
+	         }
+	         break;
+
+	      case S_DYNAMICLABEL:
+	         show_dynamicLabel (m. string);
+	         break;
+
+	      default:
 	         break;
 	   }
-
-//	      if (serviceChange. load () != -1) {
-//	         currentService = serviceNames [serviceChange. load ()];
-//	         serviceChange. store (-1);
-//	         if (!img. empty ())
-//	            destroyAllWindows ();
-//	         break;
-//	      }
-//	      if (newTime. load ()) {
-//	         writeMessage (ENSEMBLE_ROW,
-//	                       PLAYING_COLUMN + 30, the_newTime. c_str ());
-//	         newTime. store (false);
-//	      }
-//	                  
-//	   
-//#ifdef	__SHOW_PICTURES__
-//	      if (newPicture. load ()) {
-//	         newPicture. store (false);
-//	         image_path	= samples::findFile (thePicture);
-//	         destroyAllWindows ();
-//	         img		= imread (image_path, IMREAD_COLOR);
-//	         if (!img. empty ()) {
-//	            imshow (image_path, img);
-//	            char c = waitKey (1000);
-//	            if (c != -1)
-//	               fprintf (stderr, "key was %d\n", c);
-//	            if (c == '\n') 
-//	              serviceChange. store (-1);
-//	         }
-//	         else
-//	            sleep (1);
-//	      }
-//	      else
-//#endif
-//	         sleep (1);
-//	   }
 	}
-	theRadio	-> stop ();
-	theDevice	-> stopReader ();
-	delete theDevice;	
-	delete soundOut;
-	keyboard_listener. join ();
+
+//	termination:
 	endwin ();
+	theDevice	-> stopReader ();
+	theRadio	-> stop ();
+	keyboard_listener. join ();
+	delete	soundOut;
+	delete theDevice;
+	delete theRadio;
 }
+
 static
 int listenerState	= 0;
 
@@ -726,18 +776,22 @@ message m;
 	   char t = getchar ();
 	   switch (t) {
 	      case 'q':
-	         run.store (false);
+	         m. key = S_QUIT;
+	         m. string = "";
+	         fprintf (stderr, "pushed Q\n");
+	         messageQueue. push (m);
+	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case '+':
-	         m. key = S_SET_NEXTSERVICE;
+	         m. key = S_SET_NEXTCHANNEL;
 	         m. string = "";
 	         messageQueue. push (m);
 	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case '-':
-	         m. key = S_SET_PREVSERVICE;
+	         m. key = S_SET_PREVCHANNEL;
 	         m. string = "";
 	         messageQueue. push (m);
 	         theLock. Release ();
@@ -751,7 +805,7 @@ message m;
 	            listenerState = 2;
 	         break;
 	      case 0x41:
-	         m. key = S_SET_NEXTSERVICE;
+	         m. key = S_SET_PREVSERVICE;
 	         m. string = "";
 	         messageQueue. push (m);
 	         theLock. Release ();
@@ -795,26 +849,12 @@ const char *ss2 = s2. c_str ();
 	return (*ss2 == 0) && ((*ss1 == ' ') || (*ss1 == 0));
 }
 
-int	indexFor (const std::string &s) {
-	for (uint16_t index = 0; serviceNames. size (); index ++)
-	   if (matches (serviceNames [index], s))
-	      return index;
-	return 0;
-}
-
-
 void    printOptions	() {
 	std::cerr << 
 "                          dab-cmdline options are\n"
 "	                  -C Channel\n"
-"	                  -P name\tprogram to be selected in the ensemble\n"
-"	                  -T Duration\tstop after <Duration> seconds\n"
-"	                  -D number\tamount of time to look for an ensemble\n"
-"	                  -d number\tseconds to reach time sync\n"
+"	                  -B channel to be added to user defined channel list\n"
 "			  -A name\t select the audio channel (portaudio)\n"
-"	                  -O fileName\t output to file <name>\n"
-"	                  -M Mode\tMode is 1, 2 or 4. Default is Mode 1\n"
-"	                  -B Band\tBand is either L_BAND or BAND_III (default)\n"
 "	for pluto:\n"
 "	                  -G Gain in dB (range 0 .. 70)\n"
 "	                  -Q autogain (default off)\n"

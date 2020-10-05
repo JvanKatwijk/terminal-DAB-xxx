@@ -1,5 +1,5 @@
 cmake_minimum_required( VERSION 2.8.11 )
-set (objectName dab_cli)
+set (objectName terminal-DAB)
 #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -flto")
 #set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11  -pg")
@@ -54,10 +54,6 @@ if(PICTURES)
    set (PICTURES true)
 endif ()
 
-if(CURSES)
-   set (CURSES true)
-endif ()
-
 if (FDK_LIB)
    set (FDK_LIB true)
 endif ()
@@ -74,7 +70,7 @@ endif ()
 if(SDRPLAY)
    if (objectName STREQUAL "")
       set(SDRPLAY ON)
-      set(objectName dab-sdrplay-cli)
+      set(objectName terminal-DAB-sdrplay)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -83,7 +79,7 @@ endif ()
 if(SDRPLAY_V3)
    if (objectName STREQUAL "")
       set(SDRPLAY_V3 ON)
-      set(objectName dab-sdrplay-cli)
+      set(objectName terminal-DAB-sdrplay)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -92,7 +88,7 @@ endif ()
 if(AIRSPY)
    if (objectName STREQUAL "")
       set(AIRSPY ON)
-      set(objectName dab-airspy-cli)
+      set(objectName terminal-DAB-airspy)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -101,7 +97,7 @@ endif ()
 if(PLUTO)
    if (objectName STREQUAL "")
       set(PLUTOSDR ON)
-      set(objectName dab-pluto-cli)
+      set(objectName terminal-DAB-pluto)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -110,7 +106,7 @@ endif ()
 if(RTLSDR)
    if (objectName STREQUAL "")
       set(RTLSDR ON)
-      set(objectName dab-rtlsdr-cli)
+      set(objectName terminal-DAB-rtlsdr)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -126,11 +122,9 @@ endif ()
 	   add_definitions (-D__SHOW_PICTURES__)
 	endif ()
 
-	if (CURSES)
-	   find_package (Curses REQUIRED)
-	   include_directories (${CURSES_INCLUDE_DIR})
-	   list (APPEND extraLisb ${CURSES_LIBRARIES})
-	endif ()
+	find_package (Curses REQUIRED)
+	include_directories (${CURSES_INCLUDE_DIR})
+	list (APPEND extraLisb ${CURSES_LIBRARIES})
 
         find_package(FFTW3f)
         if (NOT FFTW3F_FOUND)
@@ -401,6 +395,7 @@ endif ()
 
 	set (${objectName}_HDRS
 	     ${${objectName}_HDRS}
+	     ./semaphore.h
 	     ./dab-constants.h
 	     ./dab-api.h
 	     ./audio-sink/audio-base.h
@@ -444,23 +439,9 @@ endif ()
 	     ./support/viterbi-spiral/viterbi-spiral.h
 	)
 
-	if (CURSES)
-	   set (${objectName}_HDRS
-	        ${${objectName}_HDRS}
-	        ./semaphore.h
-	   )
-	   set (${objectName}_SRCS
-	        ${${objectName}_SRCS}
-	        ./main-curses.cpp
-	   )
-	else ()
-	   set (${objectName}_SRCS
-	        ${${objectName}_SRCS}
-	         ./main-regular.cpp
-	   )
-	endif ()
 	set (${objectName}_SRCS
 	     ${${objectName}_SRCS}
+	     ./main.cpp
 	     ./audio-sink/audio-base.cpp
 	     ./audio-sink/audiosink.cpp
 	     ./audio-sink/filesink.cpp

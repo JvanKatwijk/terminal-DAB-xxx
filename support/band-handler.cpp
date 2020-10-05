@@ -1,23 +1,23 @@
 #
 /*
- *    Copyright (C) 2013, 2014, 2015, 2016, 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the dab-cmdline
+ *    This file is part of the t-DAB-xxx
  *
- *    dab-cmdline is free software; you can redistribute it and/or modify
+ *    t-DAB-xxx is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline is distributed in the hope that it will be useful,
+ *    t-DAB-xxx is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline; if not, write to the Free Software
+ *    along with t-DAB-xxx; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -92,51 +92,79 @@ struct dabFrequencies Lband_frequencies [] = {
 {NULL, 0}
 };
 
-bandHandler::bandHandler(void) {}
-bandHandler::~bandHandler(void) {}
-
-//    find the frequency for a given channel in a given band
-int32_t bandHandler::Frequency(uint8_t dabBand, std::string Channel) {
-  int32_t tunedFrequency = 0;
-  struct dabFrequencies *finger;
-  int i;
-
-  if (dabBand == BAND_III)
-    finger = bandIII_frequencies;
-  else
-    finger = Lband_frequencies;
-
-  for (i = 0; finger[i].key != NULL; i++) {
-    if (finger[i].key == Channel) {
-      tunedFrequency = finger[i].fKHz * 1000;
-      break;
-    }
-  }
-
-  if (tunedFrequency == 0)
-    tunedFrequency = finger[0].fKHz * 1000;
-
-  return tunedFrequency;
+bandHandler::bandHandler	(uint8_t theBand) {
+	this	-> theBand	= theBand;
 }
 
-std::string bandHandler::nextChannel(uint8_t dabBand, std::string Channel) {
-  struct dabFrequencies *finger;
-  int i;
+bandHandler::~bandHandler	() {
+}
 
-  if (dabBand == BAND_III)
-    finger = bandIII_frequencies;
-  else
-    finger = Lband_frequencies;
+//    find the frequency for a given channel in a given band
+int32_t bandHandler::Frequency (const std::string &Channel) {
+int32_t tunedFrequency = 0;
+struct dabFrequencies *finger;
+int i;
 
-  for (i = 0; finger[i].key != NULL; i++) {
-    if (finger[i].key == Channel) {
-      if (finger[i + 1].key == NULL)
-        return finger[0].key;
-      else
-        return finger[i + 1].key;
-      break;
-    }
-  }
+	if (theBand == BAND_III)
+	   finger = bandIII_frequencies;
+	else
+	   finger = Lband_frequencies;
 
-  return "";
+	for (i = 0; finger[i].key != NULL; i++) {
+	   if (finger[i].key == Channel) {
+	      tunedFrequency = finger[i].fKHz * 1000;
+	      break;
+	   }
+	}
+
+	if (tunedFrequency == 0)
+	   tunedFrequency = finger[0].fKHz * 1000;
+
+	return tunedFrequency;
+}
+
+std::string bandHandler::nextChannel (const std::string &Channel) {
+struct dabFrequencies *finger;
+int i;
+
+	if (theBand == BAND_III)
+	   finger = bandIII_frequencies;
+	else
+	   finger = Lband_frequencies;
+
+	for (i = 0; finger[i].key != NULL; i++) {
+	   if (finger[i].key == Channel) {
+	      if (finger[i + 1].key == NULL)
+	         return finger[0].key;
+	      else
+                 return finger[i + 1].key;
+	      break;
+	   }
+	}
+
+	return "";
+}
+
+std::string bandHandler::prevChannel (const std::string &Channel) {
+struct dabFrequencies *finger;
+int	max;
+int	i;
+	if (theBand == BAND_III)
+	   finger = bandIII_frequencies;
+	else
+	   finger = Lband_frequencies;
+
+	for (i = 0; finger [i]. key != nullptr; i ++);
+	max = i - 1;
+	for (i = 0; finger[i].key != NULL; i++) {
+	   if (finger[i].key == Channel) {
+	      if (i == 0)
+	         return finger[max].key;
+	      else
+                 return finger[i - 1].key;
+	      break;
+	   }
+	}
+
+	return "";
 }
