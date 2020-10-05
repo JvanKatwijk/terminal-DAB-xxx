@@ -6,18 +6,18 @@
  *
  *    This file is part of the dab-xxx-cli
  *
- *    dab-cmdline-2 is free software; you can redistribute it and/or modify
+ *    dab-xxx-cli is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-cmdline-2 is distributed in the hope that it will be useful,
+ *    dab-xxx-cli is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-cmdline-2; if not, write to the Free Software
+ *    along with dab-xxx-cli; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
@@ -37,6 +37,7 @@
 #include	"dab-processor.h"
 #include	"band-handler.h"
 #include	"ringbuffer.h"
+#include	"semaphore.h"
 #include	"device-handler.h"
 #ifdef	HAVE_AIRSPY
 #include	"airspy-handler.h"
@@ -76,9 +77,14 @@ using std::endl;
 	} message;
 	std::queue<message> messageQueue;
 
-#define	S_SERVICE_CHANGE	0100
-#define	S_NEW_TIME		0101
-#define	S_NEW_PICTURE		0102
+static
+Semaphore	theLock;
+	
+#define	S_SET_NEXTSERVICE	0100
+#define	S_SET_PREVSERVICE	0101
+#define	S_ACKNOWLEDGE		0102
+#define	S_NEW_TIME		0103
+#define	S_NEW_PICTURE		0104
 //	some offsets 
 #define	ENSEMBLE_ROW	4
 #define	ENSEMBLE_COLUMN	4
@@ -91,6 +97,8 @@ void	listener	();
 void	printServices	();
 static
 int		index_currentService;
+static
+int		index_previousService;
 static
 int		indexFor		(const std::string &s);
 //
@@ -140,6 +148,7 @@ message m;
 	m. key		= S_NEW_TIME;
 	m. string	= theTime;
 	messageQueue. push (m);
+	theLock. Release ();
 }
 
 void	writeMessage (int row, int column, const char *message) {
@@ -218,6 +227,7 @@ void	motdataHandler (std::string s, int d, void *ctx) {
 	m. key		= S_NEW_PICTURE;
 	m. string	= s;
 	messageQueue. push (m);
+	theLock. Release ();
 }
 #else
 void	motdataHandler (std::string s, int d, void *ctx) {
@@ -581,6 +591,7 @@ Mat img;
 	   currentService = serviceNames [0];
 	
 	index_currentService = indexFor (currentService);
+	index_previousService	= index_currentService;
 	writeMessage (SERVICE_ROW + index_currentService, DOT_COLUMN, "*");
 	while (run. load () && theDuration != 0) {
 	   char text [255];
@@ -600,47 +611,67 @@ Mat img;
 	   currentService	= ad. serviceName;
 	   theRadio	-> set_audioChannel (&ad);
 
-	   bool		breaker	= false;
+	   bool		breaker			= false;
 //	This polling loop is run while the service plays
-	   while (run. load () && (theDuration != 0)) {
-	      if (theDuration > 0)
-	         theDuration --;
+	   while (run. load ()) {
+	      while (!theLock. tryAcquire (200)) 
+	         if (!run. load ())
+	            break;
 
-	      if (!messageQueue. empty ()) {
-	         message m = messageQueue. front ();
-	         switch (m. key) {
-	            case S_SERVICE_CHANGE:
-	               currentService = m. string;
+	      if (!run. load ())
+	         break;
+	      message m = messageQueue. front ();
+	      switch (m. key) {
+	         case S_SET_NEXTSERVICE:
+	            writeMessage (SERVICE_ROW + index_currentService,
+	                                                DOT_COLUMN, " ");
+	            index_currentService = (index_currentService + 1) %
+	                                        serviceNames. size ();
+	            writeMessage (SERVICE_ROW + index_currentService, 
+	                                                   DOT_COLUMN, "*");
+	            break;
+	         case S_SET_PREVSERVICE:
+	            writeMessage (SERVICE_ROW + index_currentService,
+	                                                DOT_COLUMN, " ");
+	            index_currentService = (index_currentService - 1 -
+	                                          serviceNames. size ()) %
+	                                        serviceNames. size ();
+	            writeMessage (SERVICE_ROW + index_currentService, 
+	                                                DOT_COLUMN, "*");
+	            break;
+	         case S_ACKNOWLEDGE:
+	            if (index_currentService != index_previousService) {
+	               currentService = serviceNames [index_currentService];
 	               if (!img. empty ())
 	                  destroyAllWindows ();
 	               breaker = true;
-	               break;
-	            case S_NEW_TIME:
-	               writeMessage (ENSEMBLE_ROW,
-	                       PLAYING_COLUMN + 30, m. string. c_str ());
-	               break;
+	               index_previousService = index_currentService;
+	            }
+	            break;
+	         case S_NEW_TIME:
+	            writeMessage (ENSEMBLE_ROW,
+	                    PLAYING_COLUMN + 30, m. string. c_str ());
+	            break;
 #ifdef	__SHOW_PICTURES__
-	            case S_NEW_PICTURE:
-	               image_path = samples::findFile (m. string);
-	               destroyAllWindows ();
-	               img	= imread (image_path, IMREAD_COLOR);
-	               if (!img. empty ()) {
-	                  imshow (image_path, img);
-	                  (void)waitKey (1000);
-//	                  if (c != -1)
-//	                     fprintf (stderr, "key was %d\n", c);
-	               }
-	               break;
+	         case S_NEW_PICTURE:
+	            image_path = samples::findFile (m. string);
+	            destroyAllWindows ();
+	            img	= imread (image_path, IMREAD_COLOR);
+	            if (!img. empty ()) {
+	               imshow (image_path, img);
+	               (void)waitKey (500);
+//	               if (c != -1)
+//	                  fprintf (stderr, "key was %d\n", c);
+	            }
+	            break;
 #endif
-	            default:
-	               break;
-	         }
-	         messageQueue. pop ();
-	         if (breaker)
+	         default:
 	            break;
 	      }
-	      else
-	         sleep (1);
+	      messageQueue. pop ();
+	      
+	      if (breaker)
+	         break;
 	   }
 
 //	      if (serviceChange. load () != -1) {
@@ -699,24 +730,18 @@ message m;
 	         listenerState = 0;
 	         break;
 	      case '+':
-	         writeMessage (SERVICE_ROW + index_currentService,
-	                                             DOT_COLUMN, " ");
-	         index_currentService = (index_currentService + 1 +
-	                                             serviceNames. size ()) %
-	                                      serviceNames. size ();
-	         writeMessage (SERVICE_ROW + index_currentService, 
-	                                             DOT_COLUMN, "*");
-	         listenerState = 3;
+	         m. key = S_SET_NEXTSERVICE;
+	         m. string = "";
+	         messageQueue. push (m);
+	         theLock. Release ();
+	         listenerState = 0;
 	         break;
 	      case '-':
-	         writeMessage (SERVICE_ROW + index_currentService,
-	                                             DOT_COLUMN, " ");
-	         index_currentService = (index_currentService - 1 +
-	                                            serviceNames. size ()) %
-	                                      serviceNames. size ();
-	         writeMessage (SERVICE_ROW + index_currentService,
-	                                             DOT_COLUMN, "*");
-	         listenerState = 3;
+	         m. key = S_SET_PREVSERVICE;
+	         m. string = "";
+	         messageQueue. push (m);
+	         theLock. Release ();
+	         listenerState = 0;
 	         break;
 	      case 0x1b:
 	         listenerState = 1;
@@ -726,39 +751,28 @@ message m;
 	            listenerState = 2;
 	         break;
 	      case 0x41:
-	         if (listenerState == 2) {
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                DOT_COLUMN, " ");
-	            index_currentService = (index_currentService -1 +
-	                                       serviceNames. size ()) %
-	                                      serviceNames. size ();
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                DOT_COLUMN, "*");
-	            listenerState = 3;
-	         }
+	         m. key = S_SET_NEXTSERVICE;
+	         m. string = "";
+	         messageQueue. push (m);
+	         theLock. Release ();
+	         listenerState = 0;
 	         break;
 	      case 0x42:
-	         if (listenerState == 2) {
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                 DOT_COLUMN, " ");
-	            index_currentService = (index_currentService + 1 +
-	                                       serviceNames. size ()) %
-	                                      serviceNames. size ();
-	            writeMessage (SERVICE_ROW + index_currentService,
-	                                 DOT_COLUMN, "*");
-	            listenerState = 3;
-	         }
+	         m. key = S_SET_NEXTSERVICE;
+	         m. string = "";
+	         messageQueue. push (m);
+	         theLock. Release ();
+	         listenerState = 0;
 	         break;
 	      case 'r':
 	      case ' ':
 	      case '\t':
 	      case 012:
 	      case 015:
-	         if (listenerState == 3) {
-	            m. key = S_SERVICE_CHANGE;
-	            m. string = serviceNames [index_currentService];
-	            messageQueue. push (m);
-	         }
+	         m. key	= S_ACKNOWLEDGE;
+	         m. string = "";
+	         messageQueue. push (m);
+	         theLock. Release ();
 	         listenerState	= 0;
 	         break;
 

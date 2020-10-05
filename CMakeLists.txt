@@ -445,6 +445,10 @@ endif ()
 	)
 
 	if (CURSES)
+	   set (${objectName}_HDRS
+	        ${${objectName}_HDRS}
+	        ./semaphore.h
+	   )
 	   set (${objectName}_SRCS
 	        ${${objectName}_SRCS}
 	        ./main-curses.cpp

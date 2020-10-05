@@ -1,11 +1,11 @@
 
 -------------------------------------------------------------------------
 dab-xxx-cli:
-A dab decoding program for the terminal, with slides and selections.
+A terminal-based dab decoding program, with slides and service selection.
 -------------------------------------------------------------------------
 
-![dab-cmdline](/dab-cli-curses.png?raw=true)
 ![dab-cmdline](/dab-xxx-cli-2.png?raw=true)
+![dab-cmdline](/dab-cli-curses.png?raw=true)
 
 As well-known, Qt-DAB is a large GUI driven program with a
 large amount of options and widgets.
