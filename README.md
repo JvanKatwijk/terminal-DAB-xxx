@@ -31,6 +31,10 @@ The program supports:
 	services. The "current" service is marked by an asterisks.
 	The up- and down arrows can be used to scan through the list.
 
+	After a channel change - and after the start up, the first
+	service in the service list is marked. Select it by typing
+	return.
+
 	scanning though either the full list of channels in Band III
 	or through a user defined list of channels.
 	If no user defined list is specified, the channels in Band III
@@ -93,14 +97,11 @@ Load the libraries, e.g. for Debian (Ubuntu) systems
 	sudo apt-get install zlib1g-dev 
 	sudo apt-get install libusb-1.0-0-dev
 	sudo apt-get install libsamplerate0-dev
+	sudo apt-get install curses
 
 For showing slides one has to install
 
 	sudo apt-get install opencv-dev
-
-For runnig the curses version one has to install
-
-	sudo apt-get install curses
 
 While the past years the faad library was used for the transformation of the
 AAC data to PCM samples. It seems that the version of the faad library
@@ -149,14 +150,7 @@ To let the software know that fdk-aac is the AAC decoder of choice, use
 The software will then use the fdkaac library for the decoding of the AAC 
 frames.
 
-By default, the dab-xxx-cli with curses support is selected,
-use
-
-	-DCURSES=OFF
-
-to deselect.
-
-By default, the dab-xxx-cli with opencv is selected. Use
+By default, the terminal-DAB-xxx with opencv is selected. Use
 
 	-DPICTURES=OFF
 
@@ -169,7 +163,7 @@ When compiling on/for Linux on an X64, one might use
 as additional parameter. The option allows generation of 
 archtecture-specific  code for the deconvolution.
 
-The result is an executable dab-XXX-cli, where XXX is the name
+The result is an executable terminal-DAB-xxx, where XXX is the name
 of the device.
 
 ------------------------------------------------------------------------
@@ -180,38 +174,6 @@ The last step is merely calling "make" for the generated makefile(s)
 
 	make
 	sudo make install
-
-
-------------------------------------------------------------------------
-A non-curses version
-------------------------------------------------------------------------
-
-Alternatively, an executable can be created that does not use the curses
-library.
-
-![dab-cmdline](/dab-cmdline.png?raw=true)
-
-use
-
-	-DCURSES=OFF
-
-for this version.
-
-------------------------------------------------------------------------
-About the name of the program
-------------------------------------------------------------------------
-
-Qt-DAB is, as the name suggests, a DAB decoder using the Qt library,
-dab-cmdline is, as the name suggests, something to do with dab from the
-command line.
-Here the  name
-
-	dab-xxx-cli
-
-is chosen, where the xxx is replaced by the name of the device selected
-in the configuration, i.e.
-
-	dab-pluto-cli
 
 -------------------------------------------------------------------------
 Copyrights
