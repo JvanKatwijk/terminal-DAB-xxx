@@ -37,7 +37,7 @@
 #include	"dab-processor.h"
 #include	"band-handler.h"
 #include	"ringbuffer.h"
-#include	"semaphore.h"
+#include	"locking-queue.h"
 #include	"device-handler.h"
 #ifdef	HAVE_AIRSPY
 #include	"airspy-handler.h"
@@ -72,9 +72,8 @@ typedef struct {
    int key;
    std::string string;
 } message;
-std::queue<message> messageQueue;
 static
-Semaphore	theLock;
+lockingQueue<message>messageQueue;
 
 #define	S_START			0100
 #define	S_QUIT			0101
@@ -153,7 +152,6 @@ message m;
 	m. key		= S_NEW_TIME;
 	m. string	= theTime;
 	messageQueue. push (m);
-	theLock. Release ();
 }
 
 static
@@ -164,7 +162,6 @@ message m;
 	m. key		= S_ENSEMBLE_FOUND;
 	m. string	= name;
 	messageQueue. push (m);
-	theLock. Release ();
 }
 
 std::vector<std::string>
@@ -199,7 +196,6 @@ message m;
 	m. key		= S_SERVICE_NAME;
 	m. string	= s;
 	messageQueue. push (m);
-	theLock. Release ();
 }
 
 static
@@ -208,7 +204,6 @@ message m;
 	m. key		= S_DYNAMICLABEL;
 	m. string	= dynamicLabel;
 	messageQueue. push (m);
-	theLock. Release ();
 }
 
 #ifdef	__SHOW_PICTURES__
@@ -219,7 +214,6 @@ void	motdataHandler (std::string s, int d, void *ctx) {
 	m. key		= S_NEW_PICTURE;
 	m. string	= s;
 	messageQueue. push (m);
-	theLock. Release ();
 }
 #else
 void    motdataHandler (std::string s, int d, void *ctx) {
@@ -246,7 +240,6 @@ message m;
 	m. key	= S_TIMER_TICK;
 	m. string	= "";
 	messageQueue. push (m);
-	theLock. Release ();
 }
 	
 void	writeMessage (int row, int column, const char *message) {
@@ -607,7 +600,6 @@ Mat img;
 	m. string	= "";
 	sleep (2);
 	messageQueue. push (m);
-	theLock. Release ();
 
 	bool	channelChanged	= false;
 	run. store (true);
@@ -615,15 +607,13 @@ Mat img;
 	std::thread timer;
 	channelChanged	= true;
 	while (run. load ()) {
-	   while (!theLock. tryAcquire (200)) 
+	   message m;
+	   while (!messageQueue. pop (200, &m))
 	      if (!run. load ())
 	         break;
-
 	   if (!run. load ())
 	      break;
 
-	   message m = messageQueue. front ();
-	   messageQueue. pop ();
 	   switch (m. key) {
 	      case S_START:
 	         theRadio	-> start ();
@@ -780,21 +770,18 @@ message m;
 	         m. string = "";
 	         fprintf (stderr, "pushed Q\n");
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case '+':
 	         m. key = S_SET_NEXTCHANNEL;
 	         m. string = "";
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case '-':
 	         m. key = S_SET_PREVCHANNEL;
 	         m. string = "";
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case 0x1b:
@@ -808,14 +795,12 @@ message m;
 	         m. key = S_SET_PREVSERVICE;
 	         m. string = "";
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case 0x42:
 	         m. key = S_SET_NEXTSERVICE;
 	         m. string = "";
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState = 0;
 	         break;
 	      case 'r':
@@ -826,7 +811,6 @@ message m;
 	         m. key	= S_ACKNOWLEDGE;
 	         m. string = "";
 	         messageQueue. push (m);
-	         theLock. Release ();
 	         listenerState	= 0;
 	         break;
 

@@ -1,7 +1,8 @@
 
 -------------------------------------------------------------------------
 terminal-DAB-xxx
-A terminal-based dab decoding program, with slides and service selection.
+
+A terminal-based dab decoding program, with slides, channel and service selection.
 -------------------------------------------------------------------------
 
 ![dab-cmdline](/terminal-dab-1.png?raw=true)
@@ -12,7 +13,7 @@ large amount of options and widgets.
 The name should be read as **terminal-DAB-devicename**, the instances
 of the program have "xxx" replaced by the device name
 
-terminal-DAB uses the curses library for displaying the information
+**terminal-DAB** uses the curses library for displaying the information
 on the terminal (see the picture).
 The name of the channel, the name of the ensemble, the currently playing
 service and the time - derived from the DAB stream are displayed
@@ -21,9 +22,9 @@ displayed at the bottom of the terminal.
 
 ![dab-cmdline](/terminal-dab-2.png?raw=true)
 
-If **PICTURES**  is configured, slides, that are encoded in the
-**Program Associated Data** part of the DAB data, are made visible
-in a separate widget.
+If **PICTURES**  is configured (which is the default setting), slides,
+that are encoded in the **Program Associated Data** part of the DAB data,
+are made visible in a separate widget.
 
 The program supports:
 
@@ -35,34 +36,14 @@ The program supports:
 	service in the service list is marked. Select it by typing
 	return.
 
-	scanning though either the full list of channels in Band III
-	or through a user defined list of channels.
-	If no user defined list is specified, the channels in Band III
-	are taken. 
+	Selecting "next" or "previous" channel is by using the "+" resp.
+	the "-" key.
+	There are two options, a user defined list of - apparently -
+	interesting channels can be passed as command line parameter.
+	If this list is given, the "next" and "previous" channel are
+	taken from this list, otherwise, they will be taken from
+	the channels in Band III.
 
-------------------------------------------------------------------------
-Command line parameters
-------------------------------------------------------------------------
-
-Since it is a command line version, some parameters have to be
-given. One gets a list by starting the program without any parameter.
-
-Normal use is
-
-	dab-xxx-cli -C XXX -B YY1 -B YY2 ... -B YYn -G -Q
-
-where
-
-	a. -C XXX is the channel one wants to listen to
-
-	b. each channel to be used in scanning through the list is specified
-	   by -B channelName
- 
-	c. -G ZZZ, where Z is a valid gain value, which obviously depends on the device,
-
-	d. -Q is the autogain setting
-
-For other parameters, see the output of the program
 
 -------------------------------------------------------------------------
 Supported devices
@@ -103,6 +84,10 @@ For showing slides one has to install
 
 	sudo apt-get install opencv-dev
 
+--------------------------------------------------------------------------
+faad vs fdk-aac
+--------------------------------------------------------------------------
+
 While the past years the faad library was used for the transformation of the
 AAC data to PCM samples. It seems that the version of the faad library
 that is default in the repositories of Ubuntu 20 (and may be other
@@ -118,9 +103,14 @@ solution:
 For the dab-xxx-cli program one may choose to use the fdkaac library
 instead.
 
-Install the library on Ubuntu
-
 	sudo apt-get install libfdk-aac-dev
+
+In the CMakeLists.txt file, the default is set to libfdk-aac,
+Use
+
+	-DFAAD=ON
+
+as option for cmake to select the faad library instead.
 
 ------------------------------------------------------------------------
 Building an executable
@@ -143,12 +133,11 @@ A device name should be passed as parameter, e.g. one of
 	-DAIRSPY=ON
 	-DPLUTO=ON
 
-To let the software know that fdk-aac is the AAC decoder of choice, use
+As said, use
 
-	-DFDK_LIB=ON
+	-DFAAD=ON
 
-The software will then use the fdkaac library for the decoding of the AAC 
-frames.
+if the faad library is the AAC decoder of choice.
 
 By default, the terminal-DAB-xxx with opencv is selected. Use
 
@@ -175,6 +164,45 @@ The last step is merely calling "make" for the generated makefile(s)
 	make
 	sudo make install
 
+------------------------------------------------------------------------
+Command line parameters
+------------------------------------------------------------------------
+
+Since it is a command line version, settings are done as parameter
+in the command line.
+One gets a list of "options" by starting the program without any parameter.
+
+Normal use is
+
+	dab-xxx-cli -C XXX -B YY1 -B YY2 ... -B YYn -G -Q
+
+dab-cmdline options are
+
+	-C Channel
+	-B channel to be added to user defined channel list
+	-A name	 select the audio channel (portaudio)
+
+for pluto:
+
+	-G Gain in dB (range 0 .. 70)
+	-Q autogain (default off)
+
+for rtlsdr:
+
+	-G Gain in dB (range 0 .. 100)
+	-Q autogain (default off)
+
+for SDRplay (both versions):
+
+	-G Gain reduction in dB (range 20 .. 59)
+	-L lnaState (depends on model chosen)
+	-Q autogain (default off)
+
+for airspy:
+
+	-G number	gain, range 1 .. 21
+	-b set rf bias
+
 -------------------------------------------------------------------------
 Copyrights
 -------------------------------------------------------------------------
@@ -183,7 +211,7 @@ Copyrights
 	Jan van Katwijk (J.vanKatwijk@gmail.com)
 	Lazy Chair Computing
 
-The dab-xxx-cli software is made available under the GPL-2.0. The dab-cmdline program uses a number of GPL-ed libraries, all rights gratefully acknowledged.
-dab-cmdline is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+The dab-xxx-cli software is made available under the GPL-2.0. The terminal-DAB-xxx program uses a number of GPL-ed libraries, all rights gratefully acknowledged.
+terminal-DAB-xxx is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 

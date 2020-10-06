@@ -20,46 +20,46 @@
  *    along with t-DAB-xxx; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#ifndef	__SEMAPHORE
-#define	__SEMAPHORE
 
-#include	<thread>
-#include	<mutex>
-#include	<chrono>
-#include	<condition_variable>
+#ifndef	__LOCKING_QUEUE__
+#define	__LOCKING_QUEUE__
+#include	<queue>
+#include        <thread>
+#include        <mutex>
+#include        <chrono>
+#include        <condition_variable>
 
-class	Semaphore {
+template <class job>
+class lockingQueue {
 private:
-	mutex mtx;
+	std::queue <job> theQueue;
+	mutex	mtx;
 	condition_variable cv;
-	int count;
 public:
-	Semaphore (int count_ = 0) : count {count_} {}
+		lockingQueue	()	{} 
 
-void	Release (void) {
-	std::unique_lock<mutex>lck (mtx);
-	++count;
-	cv. notify_one ();
-}
+		~lockingQueue	()	{}
 
-void	Acquire (void) {
-	unique_lock <mutex> lck (mtx);
-	while (count == 0) {
-	   cv. wait (lck);
+	void	push		(job content) {
+	 	theQueue. push (content);
+		std::unique_lock<mutex> lck (mtx);
+		cv. notify_one ();
 	}
-	-- count;
-}
 
-bool	tryAcquire (int delay) {
-	unique_lock <mutex> lck (mtx);
-	if (count == 0) {
-	   auto now = std::chrono::system_clock::now ();
-           cv. wait_until (lck, now + std::chrono::milliseconds (delay));
+	bool	pop		(int delay, job *out) {
+		unique_lock <mutex> lck (mtx);
+	        job xxx;
+		if (theQueue. size () == 0) {
+	   	   auto now = std::chrono::system_clock:: now ();
+	           cv. wait_until (lck, now + std::chrono::milliseconds (delay));
+		}
+	        if (theQueue. size () == 0)
+	           return false;
+	        xxx		= theQueue. front ();
+	        *out		= xxx;
+	        theQueue. pop ();
+	        return true;
 	}
-	if (count == 0)
-	   return false;
-	-- count;
-	return true;
-}
 };
 #endif
+

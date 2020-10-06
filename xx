@@ -1,0 +1,20 @@
+                          dab-cmdline options are
+	                  -C Channel
+	                  -B channel to be added to user defined channel list
+			  -A name	 select the audio channel (portaudio)
+	for pluto:
+	                  -G Gain in dB (range 0 .. 70)
+	                  -Q autogain (default off)
+	for rtlsdr:
+	                  -G Gain in dB (range 0 .. 100)
+	                  -Q autogain (default off)
+	                  -p number	 ppm offset
+	for SDRplay:
+	                  -G Gain reduction in dB (range 20 .. 59)
+	                  -L lnaState (depends on model chosen)
+	                  -Q autogain (default off)
+	                  -p number	 ppm offset
+	for airspy:
+	                  -G number		gain, range 1 .. 21
+	                  -b set rf bias
+	                  -c number	 ppm Correction
