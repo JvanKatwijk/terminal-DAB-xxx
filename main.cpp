@@ -243,6 +243,11 @@ void	writeMessage (int row, int column, const char *message) {
 	move (0, 0);
 	refresh ();
 }
+//
+/////////////////////////////////////////////////////////////////////////
+//
+//	displaying things
+/////////////////////////////////////////////////////////////////////////
 
 void	showHeader	() {
 std::string text	= std::string ("terminal-DAB-") + deviceName;
@@ -290,15 +295,64 @@ std::string text	= std::string (" now playing ") + s;
 	writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text. c_str ());
 }
 
+std::string getProtectionLevel (bool shortForm, int16_t protLevel) {
+	if (!shortForm) {
+	   switch (protLevel) {
+	      case 0:     return "EEP 1-A";
+	      case 1:     return "EEP 2-A";
+	      case 2:     return "EEP 3-A";
+	      case 3:     return "EEP 4-A";
+	      case 4:     return "EEP 1-B";
+	      case 5:     return "EEP 2-B";
+	      case 6:     return "EEP 3-B";
+	      case 7:     return "EEP 4-B";
+	      default:    return "EEP unknown";
+	   }
+	}
+	else {
+	   switch (protLevel) {
+	      case 1:     return "UEP 1";
+	      case 2:     return "UEP 2";
+	      case 3:     return "UEP 3";
+	      case 4:     return "UEP 4";
+	      case 5:     return "UEP 5";
+	      default:    return "UEP unknown";
+	   }
+	}
+}
+
+static const
+char *uep_rates [] = {"7/20", "2/5", "1/2", "3/5", "3/4"};
+static const
+char *eep_Arates[] = {"1/4",  "3/8", "1/2", "3/4"}; 
+static const
+char *eep_Brates[] = {"4/9",  "4/7", "4/6", "4/5"}; 
+
+std::string getCodeRate (bool shortForm, int16_t protLevel) {
+int h = protLevel;
+
+        if (!shortForm)
+           return ((h & (1 << 2)) == 0) ?
+                            eep_Arates [h & 03] :
+                            eep_Brates [h & 03]; // EEP -A/-B
+        else
+           return uep_rates [h - 1];     // UEP
+}
+
 void	show_audioData	(audiodata *ad) {
 std::string bitRate	= std::string ("bitrate ") +
 	                               std::to_string (ad -> bitRate);
 std::string type	= ad -> ASCTy == 077 ? "DAB+" : "DAB";
 std::string programType	= get_programm_type_string (ad -> programType);
+std::string protLevel	= getProtectionLevel (ad -> shortForm,
+	                                          ad -> protLevel);
+	protLevel += std::string ("  ");
+	protLevel += getCodeRate (ad -> shortForm, ad -> protLevel);
 
 	writeMessage (AUDIODATA_LINE + 0, AUDIODATA_COLUMN, type. c_str ());
 	writeMessage (AUDIODATA_LINE + 1, AUDIODATA_COLUMN, bitRate. c_str ());
 	writeMessage (AUDIODATA_LINE + 2, AUDIODATA_COLUMN, programType. c_str ());
+	writeMessage (AUDIODATA_LINE + 3, AUDIODATA_COLUMN, protLevel. c_str ());
 }
 
 void	mark_service (int index, const std::string &s) {
@@ -308,7 +362,7 @@ void	mark_service (int index, const std::string &s) {
 
 void	show_dynamicLabel	(const std::string dynLab) {
 char text [COLS];
-int	i;
+uint16_t	i;
 
 	for (i = 0; (i < dynLab. size ()) && (i < COLS - 1); i ++)
 	   text [i] = dynLab. at (i);
@@ -317,6 +371,9 @@ int	i;
 	text [COLS - 1] = 0;
 	writeMessage (LINES - 1, 0, text);
 }
+//
+//	computing the "next" channel
+//
 std::vector<std::string> userChannels;
 static
 std::string	nextChannel	(const std::string &s, bool dir) {
@@ -337,7 +394,7 @@ int size = userChannels. size ();
 	   return dabBand. nextChannel (s);
 	return dabBand. prevChannel (s);
 }
-	   
+
 void	selectService	(const std::string &s) {
 audiodata ad;
 
@@ -758,6 +815,7 @@ Mat img;
 	endwin ();
 	theDevice	-> stopReader ();
 	theRadio	-> stop ();
+	soundOut	-> stop	();
 	keyboard_listener. join ();
 	delete	soundOut;
 	delete theDevice;
