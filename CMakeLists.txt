@@ -436,6 +436,7 @@ endif ()
 	     ./support/eep-protection.h
 	     ./support/fft_handler.h
 	     ./support/dab-params.h
+	     ./support/text-mapper.h
 	     ./support/viterbi-spiral/viterbi-spiral.h
 	)
 
@@ -480,6 +481,7 @@ endif ()
 	     ./support/uep-protection.cpp
 	     ./support/fft_handler.cpp
 	     ./support/dab-params.cpp
+	     ./support/text-mapper.cpp
 	     ./support/viterbi-spiral/viterbi-spiral.cpp
 	)
 

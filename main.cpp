@@ -38,6 +38,7 @@
 #include	"band-handler.h"
 #include	"ringbuffer.h"
 #include	"locking-queue.h"
+#include	"text-mapper.h"
 #include	"device-handler.h"
 #ifdef	HAVE_AIRSPY
 #include	"airspy-handler.h"
@@ -97,6 +98,8 @@ lockingQueue<message>messageQueue;
 #define	SERVICE_COLUMN	10
 #define	DOT_COLUMN	(SERVICE_COLUMN - 2)
 
+#define	AUDIODATA_LINE		10
+#define	AUDIODATA_COLUMN	40
 
 void    printOptions	();	// forward declaration
 void	listener	();
@@ -234,14 +237,6 @@ static bool isStarted	= false;
 	soundOut	-> audioOut (buffer, size, rate);
 }
 
-void	timerSignal	(int delay) {
-message m;
-	sleep (delay);
-	m. key	= S_TIMER_TICK;
-	m. string	= "";
-	messageQueue. push (m);
-}
-	
 void	writeMessage (int row, int column, const char *message) {
 	for (uint16_t i = 0; message [i] != 0; i ++)
 	   mvaddch (row, column + i, message [i]);
@@ -277,15 +272,33 @@ void	showServices	() {
                                            serviceNames [i]. c_str ());
 }
 
+void	clear_audioData () {
+	writeMessage (AUDIODATA_LINE + 0, AUDIODATA_COLUMN, "                ");
+	writeMessage (AUDIODATA_LINE + 1, AUDIODATA_COLUMN, "                ");
+	writeMessage (AUDIODATA_LINE + 2, AUDIODATA_COLUMN, "                ");
+	writeMessage (AUDIODATA_LINE + 3, AUDIODATA_COLUMN, "                ");
+}
+
 void	clearServices	() {
 	for (uint16_t i = 0; i < serviceNames. size (); i ++)
            writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
                                            "                ");
 }
 
-void	show_playing	(const std::string &s) {
+void	show_playing	(const char *s) {
 std::string text	= std::string (" now playing ") + s;
-	  writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text. c_str ());
+	writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text. c_str ());
+}
+
+void	show_audioData	(audiodata *ad) {
+std::string bitRate	= std::string ("bitrate ") +
+	                               std::to_string (ad -> bitRate);
+std::string type	= ad -> ASCTy == 077 ? "DAB+" : "DAB";
+std::string programType	= get_programm_type_string (ad -> programType);
+
+	writeMessage (AUDIODATA_LINE + 0, AUDIODATA_COLUMN, type. c_str ());
+	writeMessage (AUDIODATA_LINE + 1, AUDIODATA_COLUMN, bitRate. c_str ());
+	writeMessage (AUDIODATA_LINE + 2, AUDIODATA_COLUMN, programType. c_str ());
 }
 
 void	mark_service (int index, const std::string &s) {
@@ -336,7 +349,8 @@ audiodata ad;
 
 	currentService       = ad. serviceName;
 	theRadio     -> set_audioChannel (&ad);
-	show_playing (s);
+	show_playing (ad. serviceName. c_str ());
+	show_audioData (&ad);
 }
 
 callbacks	the_callBacks;
@@ -608,11 +622,7 @@ Mat img;
 	channelChanged	= true;
 	while (run. load ()) {
 	   message m;
-	   while (!messageQueue. pop (200, &m))
-	      if (!run. load ())
-	         break;
-	   if (!run. load ())
-	      break;
+	   while (!messageQueue. pop (10000, &m));
 
 	   switch (m. key) {
 	      case S_START:
@@ -624,13 +634,6 @@ Mat img;
 
 	      case S_QUIT:
 	         run. store (false);
-	         break;
-
-	      case S_TIMER_TICK:
-	         if (index_currentService < (int)(serviceNames. size ())) {
-	            mark_service (index_currentService, "*");
-	            selectService (serviceNames [index_currentService]);
-	         }
 	         break;
 
 	      case S_SET_NEXTCHANNEL:
@@ -645,6 +648,7 @@ Mat img;
 	         sleep (1);
 	         mark_service (index_currentService, " ");
 	         clearServices ();
+	         clear_audioData	();
 	         showChannel (theChannel);
 	         serviceNames. resize (0);
 	         sleep (1);
@@ -665,7 +669,8 @@ Mat img;
 	         ensembleRecognized. store (false);
 	         sleep (1);
 	         mark_service (index_currentService, " ");
-	         clearServices ();
+	         clearServices		();
+	         clear_audioData	();
 	         showChannel (theChannel);
 	         serviceNames. resize (0);
 	         sleep (1);
@@ -678,6 +683,7 @@ Mat img;
 	      case S_SET_NEXTSERVICE:
 	         channelChanged		= false;
 	         mark_service (index_currentService, " ");
+	         clear_audioData ();
 	         index_currentService = (index_currentService + 1) %
 	                                             serviceNames. size ();
 	         mark_service (index_currentService, "*");
@@ -691,6 +697,7 @@ Mat img;
 	      case S_SET_PREVSERVICE:
 	         channelChanged		= false;
 	         mark_service (index_currentService, " ");
+	         clear_audioData ();
 	         index_currentService = (index_currentService - 1 +
 	                                             serviceNames. size ()) %
 	                                             serviceNames. size ();
