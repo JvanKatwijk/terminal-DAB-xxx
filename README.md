@@ -44,7 +44,6 @@ The program supports:
 	taken from this list, otherwise, they will be taken from
 	the channels in Band III.
 
-
 -------------------------------------------------------------------------
 Supported devices
 -------------------------------------------------------------------------

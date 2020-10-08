@@ -22,15 +22,12 @@
  */
 
 #include	<stdlib.h>
-#include	<curses.h>
 #include	<unistd.h>
 #include	<signal.h>
 #include	<getopt.h>
-#include        <cstdio>
 #include        <iostream>
 #include	<complex>
 #include	<vector>
-#include	<thread>
 #include	"audiosink.h"
 #include	"filesink.h"
 #include	"dab-api.h"
@@ -38,7 +35,7 @@
 #include	"band-handler.h"
 #include	"ringbuffer.h"
 #include	"locking-queue.h"
-#include	"text-mapper.h"
+#include	"display-handler.h"
 #include	"device-handler.h"
 #ifdef	HAVE_AIRSPY
 #include	"airspy-handler.h"
@@ -75,7 +72,10 @@ typedef struct {
 } message;
 static
 lockingQueue<message>messageQueue;
+displayHandler	theDisplay;
 
+//
+//	Valid signals:
 #define	S_START			0100
 #define	S_QUIT			0101
 #define	S_SET_NEXTCHANNEL	0102
@@ -90,20 +90,8 @@ lockingQueue<message>messageQueue;
 #define	S_SERVICE_NAME		0301
 #define	S_DYNAMICLABEL		0302
 
-//	some offsets 
-#define	ENSEMBLE_ROW	4
-#define	ENSEMBLE_COLUMN	4
-#define	PLAYING_COLUMN	(ENSEMBLE_COLUMN + 22 + 2)
-#define	SERVICE_ROW	(ENSEMBLE_ROW + 1)
-#define	SERVICE_COLUMN	10
-#define	DOT_COLUMN	(SERVICE_COLUMN - 2)
-
-#define	AUDIODATA_LINE		10
-#define	AUDIODATA_COLUMN	40
-
 void    printOptions	();	// forward declaration
 void	listener	();
-void	printServices	();
 static
 int		index_currentService;
 //
@@ -133,9 +121,6 @@ std::string ensembleName;
 
 static
 audioBase	*soundOut	= nullptr;
-
-static
-std::string	currentService	= "";
 
 static void sighandler (int signum) {
 	fprintf (stderr, "Signal caught, terminating!\n");
@@ -189,16 +174,23 @@ static
 std::vector<std::string> serviceNames;
 
 static
-void	programnameHandler (std::string s, int SId, void *userdata) {
+void	addtoEnsemble (std::string s, int SId, void *userdata) {
 message m;
-	for (std::vector<std::string>::iterator it = serviceNames.begin();
-	             it != serviceNames. end(); ++it)
-	   if (*it == s)
-	      return;
-	serviceNames = insert (serviceNames, s);
+	(void)SId;
 	m. key		= S_SERVICE_NAME;
 	m. string	= s;
 	messageQueue. push (m);
+}
+
+static
+void	addtoServices (std::string s) {
+	for (std::vector<std::string>::iterator it = serviceNames.begin();
+	   it != serviceNames. end(); ++it)
+	   if (*it == s)
+	      return;
+	serviceNames = insert (serviceNames, s);
+	for (uint16_t i = 0; i < serviceNames. size (); i ++)
+	   theDisplay. showService (serviceNames [i], i);
 }
 
 static
@@ -237,140 +229,6 @@ static bool isStarted	= false;
 	soundOut	-> audioOut (buffer, size, rate);
 }
 
-void	writeMessage (int row, int column, const char *message) {
-	for (uint16_t i = 0; message [i] != 0; i ++)
-	   mvaddch (row, column + i, message [i]);
-	move (0, 0);
-	refresh ();
-}
-//
-/////////////////////////////////////////////////////////////////////////
-//
-//	displaying things
-/////////////////////////////////////////////////////////////////////////
-
-void	showHeader	() {
-std::string text	= std::string ("terminal-DAB-") + deviceName;
-	writeMessage (0, 20, text. c_str ());
-        writeMessage (1, 1, "Use + and - keys to scan throught the channels");
-        writeMessage (2, 1, "Use up and down arrow keys to scan throught the services");
-	for (int i = 5; i < COLS - 5; i ++)
-	   writeMessage (3, i, "=");
-}
-
-void	showEnsemble	(std::string theChannel) {
-std::string text	= theChannel + 
-	                  std::string (": Ensemble: ") +
-	                  ensembleName;
-        writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, text. c_str ());
-}
-
-void	showChannel	(std::string theChannel) {
-	writeMessage (ENSEMBLE_ROW, ENSEMBLE_COLUMN, theChannel. c_str ());
-	for (int i = ENSEMBLE_COLUMN + 4; i < COLS; i ++)
-	   writeMessage (ENSEMBLE_ROW, i, " ");
-}
-
-void	showServices	() {
-	for (uint16_t i = 0; i < serviceNames. size (); i ++)
-           writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
-                                           serviceNames [i]. c_str ());
-}
-
-void	clear_audioData () {
-	writeMessage (AUDIODATA_LINE + 0, AUDIODATA_COLUMN, "                ");
-	writeMessage (AUDIODATA_LINE + 1, AUDIODATA_COLUMN, "                ");
-	writeMessage (AUDIODATA_LINE + 2, AUDIODATA_COLUMN, "                ");
-	writeMessage (AUDIODATA_LINE + 3, AUDIODATA_COLUMN, "                ");
-}
-
-void	clearServices	() {
-	for (uint16_t i = 0; i < serviceNames. size (); i ++)
-           writeMessage (SERVICE_ROW + i, SERVICE_COLUMN,
-                                           "                ");
-}
-
-void	show_playing	(const char *s) {
-std::string text	= std::string (" now playing ") + s;
-	writeMessage (ENSEMBLE_ROW, PLAYING_COLUMN, text. c_str ());
-}
-
-std::string getProtectionLevel (bool shortForm, int16_t protLevel) {
-	if (!shortForm) {
-	   switch (protLevel) {
-	      case 0:     return "EEP 1-A";
-	      case 1:     return "EEP 2-A";
-	      case 2:     return "EEP 3-A";
-	      case 3:     return "EEP 4-A";
-	      case 4:     return "EEP 1-B";
-	      case 5:     return "EEP 2-B";
-	      case 6:     return "EEP 3-B";
-	      case 7:     return "EEP 4-B";
-	      default:    return "EEP unknown";
-	   }
-	}
-	else {
-	   switch (protLevel) {
-	      case 1:     return "UEP 1";
-	      case 2:     return "UEP 2";
-	      case 3:     return "UEP 3";
-	      case 4:     return "UEP 4";
-	      case 5:     return "UEP 5";
-	      default:    return "UEP unknown";
-	   }
-	}
-}
-
-static const
-char *uep_rates [] = {"7/20", "2/5", "1/2", "3/5", "3/4"};
-static const
-char *eep_Arates[] = {"1/4",  "3/8", "1/2", "3/4"}; 
-static const
-char *eep_Brates[] = {"4/9",  "4/7", "4/6", "4/5"}; 
-
-std::string getCodeRate (bool shortForm, int16_t protLevel) {
-int h = protLevel;
-
-        if (!shortForm)
-           return ((h & (1 << 2)) == 0) ?
-                            eep_Arates [h & 03] :
-                            eep_Brates [h & 03]; // EEP -A/-B
-        else
-           return uep_rates [h - 1];     // UEP
-}
-
-void	show_audioData	(audiodata *ad) {
-std::string bitRate	= std::string ("bitrate ") +
-	                               std::to_string (ad -> bitRate);
-std::string type	= ad -> ASCTy == 077 ? "DAB+" : "DAB";
-std::string programType	= get_programm_type_string (ad -> programType);
-std::string protLevel	= getProtectionLevel (ad -> shortForm,
-	                                          ad -> protLevel);
-	protLevel += std::string ("  ");
-	protLevel += getCodeRate (ad -> shortForm, ad -> protLevel);
-
-	writeMessage (AUDIODATA_LINE + 0, AUDIODATA_COLUMN, type. c_str ());
-	writeMessage (AUDIODATA_LINE + 1, AUDIODATA_COLUMN, bitRate. c_str ());
-	writeMessage (AUDIODATA_LINE + 2, AUDIODATA_COLUMN, programType. c_str ());
-	writeMessage (AUDIODATA_LINE + 3, AUDIODATA_COLUMN, protLevel. c_str ());
-}
-
-void	mark_service (int index, const std::string &s) {
-	writeMessage (SERVICE_ROW + index_currentService,
-                                              DOT_COLUMN, s. c_str ());
-}
-
-void	show_dynamicLabel	(const std::string dynLab) {
-char text [COLS];
-uint16_t	i;
-
-	for (i = 0; (i < dynLab. size ()) && (i < COLS - 1); i ++)
-	   text [i] = dynLab. at (i);
-	for (; i < COLS - 1; i ++)
-	   text [i] = ' ';
-	text [COLS - 1] = 0;
-	writeMessage (LINES - 1, 0, text);
-}
 //
 //	computing the "next" channel
 //
@@ -400,14 +258,14 @@ audiodata ad;
 
 	theRadio -> dataforAudioService (s. c_str (), &ad);
 	if (!ad. defined) {
-	   show_playing ("no data");
+	   theDisplay. show_playing ("no data");
 	   return;
 	}
 
-	currentService       = ad. serviceName;
+//	currentService       = ad. serviceName;
 	theRadio     -> set_audioChannel (&ad);
-	show_playing (ad. serviceName. c_str ());
-	show_audioData (&ad);
+	theDisplay. show_playing (ad. serviceName);
+	theDisplay. show_audioData (&ad);
 }
 
 callbacks	the_callBacks;
@@ -457,7 +315,7 @@ Mat img;
 	the_callBacks. timeHandler		= timeHandler;
 	the_callBacks. ensembleHandler		= ensemblenameHandler;
 	the_callBacks. audioOutHandler		= audioOutHandler;
-	the_callBacks. programnameHandler	= programnameHandler;
+	the_callBacks. programnameHandler	= addtoEnsemble;
 	the_callBacks. dynamicLabelHandler	= dynamicLabelHandler;
 	the_callBacks. motdataHandler		= motdataHandler;
 
@@ -663,9 +521,7 @@ Mat img;
 	}
 
 //	here we start
-	initscr	();
-	cbreak	();
-	noecho	();
+	theDisplay. startDisplay ();
 	message m;
 	m. key	= S_START;
 	m. string	= "";
@@ -686,7 +542,7 @@ Mat img;
 	         theRadio	-> start ();
                  theDevice	-> restartReader (frequency);
 	         index_currentService	= 0;
-	         showHeader ();
+	         theDisplay. showHeader (deviceName);
 	         break;
 
 	      case S_QUIT:
@@ -703,10 +559,10 @@ Mat img;
 	         theRadio	-> stop ();
 	         ensembleRecognized. store (false);
 	         sleep (1);
-	         mark_service (index_currentService, " ");
-	         clearServices ();
-	         clear_audioData	();
-	         showChannel (theChannel);
+	         theDisplay. mark_service (index_currentService, " ");
+	         theDisplay. clearServices (serviceNames. size ());
+	         theDisplay. clear_audioData	();
+	         theDisplay. showChannel (theChannel);
 	         serviceNames. resize (0);
 	         sleep (1);
 	         theDevice	-> restartReader (dabBand. Frequency (theChannel));
@@ -725,10 +581,10 @@ Mat img;
 	         theRadio	-> stop ();
 	         ensembleRecognized. store (false);
 	         sleep (1);
-	         mark_service (index_currentService, " ");
-	         clearServices		();
-	         clear_audioData	();
-	         showChannel (theChannel);
+	         theDisplay. mark_service (index_currentService, " ");
+	         theDisplay. clearServices (serviceNames. size ());
+	         theDisplay. clear_audioData	();
+	         theDisplay. showChannel (theChannel);
 	         serviceNames. resize (0);
 	         sleep (1);
 	         theDevice	-> restartReader (dabBand. Frequency (theChannel));
@@ -739,11 +595,11 @@ Mat img;
 
 	      case S_SET_NEXTSERVICE:
 	         channelChanged		= false;
-	         mark_service (index_currentService, " ");
-	         clear_audioData ();
+	         theDisplay. mark_service (index_currentService, " ");
+	         theDisplay. clear_audioData ();
 	         index_currentService = (index_currentService + 1) %
 	                                             serviceNames. size ();
-	         mark_service (index_currentService, "*");
+	         theDisplay. mark_service (index_currentService, "*");
 #ifdef	__SHOW_PICTURES__
 	         if (!img. empty ())
 	            destroyAllWindows ();
@@ -753,12 +609,12 @@ Mat img;
 
 	      case S_SET_PREVSERVICE:
 	         channelChanged		= false;
-	         mark_service (index_currentService, " ");
-	         clear_audioData ();
+	         theDisplay. mark_service (index_currentService, " ");
+	         theDisplay. clear_audioData ();
 	         index_currentService = (index_currentService - 1 +
 	                                             serviceNames. size ()) %
 	                                             serviceNames. size ();
-	         mark_service (index_currentService, "*");
+	         theDisplay. mark_service (index_currentService, "*");
 #ifdef	__SHOW_PICTURES__
 	         if (!img. empty ())
 	            destroyAllWindows ();
@@ -768,18 +624,17 @@ Mat img;
 
 	      case S_ACKNOWLEDGE:
 	         if (channelChanged) {
-	           mark_service (index_currentService, "*");
+	           theDisplay. mark_service (index_currentService, "*");
 	           selectService (serviceNames [index_currentService]);
 	           break;
 	         }
 	         break;
 
 	      case S_NEW_TIME:
-#ifdef	__SHOW_PICTURES__
-	         writeMessage (ENSEMBLE_ROW,
-                            PLAYING_COLUMN + 30, m. string. c_str ());
+	         theDisplay. showTime (m. string);
 	         break;
 	      case S_NEW_PICTURE:
+#ifdef	__SHOW_PICTURES__
 	         image_path = samples::findFile (m. string);
 	         destroyAllWindows ();
 	         img	= imread (image_path, IMREAD_COLOR);
@@ -791,19 +646,19 @@ Mat img;
 	         break;
 
 	      case S_ENSEMBLE_FOUND:
-	         showEnsemble (theChannel);
+	         theDisplay. showEnsemble (theChannel, ensembleName);
 	         break;
 
 	      case S_SERVICE_NAME:
-	         showServices ();
+	         addtoServices (m. string);
 	         if (ensembleRecognized. load ()) {
 	            index_currentService = 0;
-	            mark_service (index_currentService, "*");
+	            theDisplay. mark_service (index_currentService, "*");
 	         }
 	         break;
 
 	      case S_DYNAMICLABEL:
-	         show_dynamicLabel (m. string);
+	         theDisplay. show_dynamicLabel (m. string);
 	         break;
 
 	      default:
@@ -812,9 +667,9 @@ Mat img;
 	}
 
 //	termination:
-	endwin ();
 	theDevice	-> stopReader ();
 	theRadio	-> stop ();
+	theDisplay. stop ();
 	soundOut	-> stop	();
 	keyboard_listener. join ();
 	delete	soundOut;

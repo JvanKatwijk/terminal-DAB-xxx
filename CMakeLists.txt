@@ -398,6 +398,7 @@ endif ()
 	     ./locking-queue.h
 	     ./dab-constants.h
 	     ./dab-api.h
+	     ./display0handler.h
 	     ./audio-sink/audio-base.h
 	     ./audio-sink/audiosink.h
 	     ./audio-sink/filesink.h
@@ -442,7 +443,8 @@ endif ()
 
 	set (${objectName}_SRCS
 	     ${${objectName}_SRCS}
-	     ./main.cpp
+	     ./main.cpp	
+	     ./display-handler.cpp
 	     ./audio-sink/audio-base.cpp
 	     ./audio-sink/audiosink.cpp
 	     ./audio-sink/filesink.cpp
