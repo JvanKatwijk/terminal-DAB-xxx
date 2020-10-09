@@ -4,7 +4,7 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of terminal-DAB
+ *    This file is part of terminal-DAB-XXX
  *
  *    terminal-DAB is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -19,28 +19,40 @@
  *    You should have received a copy of the GNU General Public License
  *    along with terminal-DAB; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- *	Simple base class for combining uep and eep deconvolvers
  */
-#ifndef	__PROTECTION__
-#define	__PROTECTION__
 
-#include	<stdint.h>
+#ifndef __LIME_HANDLER__
+#define	__LIME_HANDLER__
+
+#include	<atomic>
 #include	<vector>
-#include	"viterbi-spiral.h"
-//#include	"viterbi-handler.h"
+#include	<thread>
+#include	"ringbuffer.h"
+#include	<LimeSuite.h>
+#include	"device-handler.h"
 
-class	protection: public viterbiSpiral {
-//class	protection: public viterbiHandler {
+class	limeHandler: public deviceHandler {
 public:
-		protection  	(int16_t, int16_t);
-virtual		~protection	(void);
-virtual	bool	deconvolve	(int16_t *, int32_t, uint8_t *);
-protected:
-        int16_t         bitRate;
-        int32_t         outSize;
-        std::vector<uint8_t> indexTable;
-        std::vector<int16_t> viterbiBlock;
+			limeHandler	(RingBuffer<std::complex<float>> *b,
+	                                 int32_t	frequency,
+	                                 int16_t	gain,
+	                                 std::string	antenna);
+			~limeHandler	(void);
+	bool		restartReader	(int32_t);
+	void		stopReader	(void);
+        void            resetBuffer	(void);
+private:
+	std::atomic<bool>	running;
+	std::thread		threadHandle;
+	int32_t			frequency;
+	int16_t			gain;
+	lms_device_t		*theDevice;
+	lms_name_t		antennas [10];
+	RingBuffer<std::complex<float>> *_I_Buffer;
+	lms_stream_meta_t 	meta;
+        lms_stream_t		stream;
+        void			run		(void);
 };
+
 #endif
 

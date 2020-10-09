@@ -257,7 +257,7 @@ stream_parms	streamParameters;
 #endif
 	   }
 	   else {
-	      fprintf (stderr, "CRC failure with dab+ frame should not happen\n");
+//	      fprintf (stderr, "CRC failure with dab+ frame should not happen\n");
 	   }
 	}
 	return true;

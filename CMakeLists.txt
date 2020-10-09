@@ -33,6 +33,8 @@ OPTION(SDRPLAY_V3  "Input: SDRPlay"  OFF)
 OPTION(AIRSPY   "Input: AirSpy"   OFF)
 OPTION(PLUTO	"Input: PLUTO"	  OFF)
 OPTION(RTLSDR	"Input: RTLSDR"	  OFF)
+OPTION(HACKRF	"Input: Hackrf"	  OFF)
+OPTION(LIMESDR	"Input: LimeSDR"  OFF)
 #OPTION(WAVFILES "Input: WAVFILES" OFF)
 
 OPTION(CURSES	"ncurses"         ON)
@@ -43,7 +45,7 @@ OPTION(RPI_DEFINED "optimize for ARM/NEON" OFF)
 
 
 if ( (NOT SDRPLAY) AND (NOT AirSpy) AND (NOT PLUTO) AND (NOT RTLSDR)
-    AND (NOT WAVFILES) AND (NOT SDRPLAY_V3) )
+    AND (NOT WAVFILES) AND (NOT SDRPLAY_V3) AND (NOT HACKRF) AND (NOT LIMESDR) )
    message("None of the Input Options selected. Using default SDRPlay")
    set(SDRPlay ON)
 endif ()
@@ -61,7 +63,7 @@ endif ()
 if(WAVFILES)
    if (objectName STREQUAL "")
       set(WAVFILES ON)
-      set(objectName dab-files-cli)
+      set(objectName terminal-DAB-wav)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -107,6 +109,24 @@ if(RTLSDR)
    if (objectName STREQUAL "")
       set(RTLSDR ON)
       set(objectName terminal-DAB-rtlsdr)
+   else ()
+      message ("Ignoring second option")
+   endif ()
+endif ()
+
+if(HACKRF)
+   if (objectName STREQUAL "")
+      set(HACKRF ON)
+      set(objectName terminal-DAB-hackrf)
+   else ()
+      message ("Ignoring second option")
+   endif ()
+endif ()
+
+if(LIMESDR)
+   if (objectName STREQUAL "")
+      set(LIMESDR ON)
+      set(objectName terminal-DAB-limesdr)
    else ()
       message ("Ignoring second option")
    endif ()
@@ -315,6 +335,66 @@ endif ()
 
 	   add_definitions (-DHAVE_AIRSPY)
 	endif (AIRSPY)
+
+	if (HACKRF)
+	   find_path (HACKLIB_INCLUDE_DIR
+                      NAMES hackrf.h
+                      PATHS
+	              ./devices/hackrf-handler/libhackrf/
+                       /usr/local/include/
+	   )
+           include_directories (${HACKLIB_INCLUDE_DIR})
+
+           find_library (HACKLIB hackrf)
+           if(NOT(HACKLIB))
+              message(FATAL_ERROR "please install -lhackrf")
+           else(NOT(HACKLIB))
+              list (APPEND extraLibs ${HACKLIB})
+           endif(NOT(HACKLIB))
+
+	   include_directories (
+	     ./devices/hackrf-handler
+	   )
+
+	   set ($(objectName)_HDRS
+	        ${${objectName}_HDRS}
+	        ./devices/hackrf-handler/hackrf-handler.h
+           )
+
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	        ./devices/hackrf-handler/hackrf-handler.cpp
+	   )
+
+	 add_definitions (-DHAVE_HACKRF)
+	endif (HACKRF)
+
+	if (LIMESDR)
+           find_library (LIMELIB LimeSuite)
+           if(NOT(LIMELIB))
+              message(FATAL_ERROR "please install LimeSuite")
+           else(NOT(LIMELIB))
+              list (APPEND extraLibs ${LIMELIB})
+           endif(NOT(LIMELIB))
+
+	   include_directories (
+	     ./devices/lime-handler
+	   )
+
+	   set ($(objectName)_HDRS
+	        ${${objectName}_HDRS}
+	        ./devices/lime-handler/LMS7002M_parameters.h
+	        ./devices/lime-handler/LimeSuite.h
+	        ./devices/lime-handler/lime-handler.h
+           )
+
+	   set (${objectName}_SRCS
+	        ${${objectName}_SRCS}
+	        ./devices/lime-handler/lime-handler.cpp
+	   )
+
+	 add_definitions (-DHAVE_LIMESDR)
+	endif (LIMESDR)
 
         find_package(Portaudio)
         if (NOT PORTAUDIO_FOUND)

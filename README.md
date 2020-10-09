@@ -1,6 +1,6 @@
 
 -------------------------------------------------------------------------
-terminal-DAB-xxx
+terminal-DAB-xxx (t-DAB)
 
 A terminal-based dab decoding program, with slides, channel and service selection.
 -------------------------------------------------------------------------
@@ -9,9 +9,10 @@ A terminal-based dab decoding program, with slides, channel and service selectio
 
 As well-known, **Qt-DAB** is a large GUI driven program with a
 large amount of options and widgets.
-**terminal-DAB** is - different from Qt-DAB - a **terminal-based**  program.
-The name should be read as **terminal-DAB-devicename**, the instances
-of the program have "xxx" replaced by the device name
+The name is - obviously - derived from Qt, the name of the framework for
+the GUI, and DAB.  
+**t-DAB**, or **terminal-DAB**, is also a DAB decoder. It is kept simple
+and it is meant to be run from a terminal hence the name.
 
 **terminal-DAB** uses the curses library for displaying the information
 on the terminal (see the picture).

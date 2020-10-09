@@ -47,6 +47,10 @@
 #include	"sdrplay-handler-v3.h"
 #elif	HAVE_RTLSDR
 #include	"rtlsdr-handler.h"
+#elif	HAVE_HACKRF
+#include	"hackrf-handler.h"
+#elif	HAVE_LIMESDR
+#include	"lime-handler.h"
 #elif	HAVE_WAVFILES
 #include	"wavfiles.h"
 #endif
@@ -299,6 +303,15 @@ int16_t		gain		= 20;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
 const char	*optionsString	= "B:D:d:P:A:C:G:b";
+#elif	HAVE_HACKRF
+int		lnaGain		= 40;
+int		vgaGain		= 40;
+int		ppmOffset	= 0;
+const char	*optionsString	= "D:d:A:C:G:g:p:";
+#elif	HAVE_LIMESDR
+int16_t		gain		= 70;
+std::string	antenna		= "Auto";
+const char	*optionsString	= "D:d:A:C:G:g:X:";
 #endif
 std::string	soundChannel	= "default";
 int16_t		latency		= 10;
@@ -414,6 +427,28 @@ Mat img;
 	      case 'b':
 	         rf_bias	= true;
 	         break;
+#elif	HAVE_HACKRF
+	      case 'G':
+	         lnaGain	= atoi (optarg);
+	         break;
+
+	      case 'g':
+	         vgaGain	= atoi (optarg);
+	         break;
+
+	      case 'p':
+	         ppmOffset	= 0;
+	         break;
+
+#elif	HAVE_LIME
+	      case 'G':
+	      case 'g':	
+	         gain		= atoi (optarg);
+	         break;
+
+	      case 'X':
+	         antenna	= std::string (optarg);
+	         break;
 #endif
 	      default:
 	         fprintf (stderr, "Option %c not understood\n", opt);
@@ -484,6 +519,15 @@ Mat img;
                                              gain,
                                              autogain);
 	deviceName	= "rtlsdr";
+#elif	HAVE_HACKRF
+	   theDevice	= new hackrfHandler	(&_I_Buffer,
+	                                         frequency,
+	                                         ppmOffset,
+	                                         lnaGain,
+	                                         vgaGain);
+#elif	HAVE_LIME
+	   theDevice	= new limeHandler	(&_I_Buffer,
+	                                         frequency, gain, antenna);
 #elif	HAVE_WAVFILES
 	   theDevice	= new wavFiles	(fileName. c_str (),
 	                                 &_I_Buffer, nullptr);
