@@ -207,6 +207,17 @@ for airspy:
 	-G number	gain, range 1 .. 21
 	-b set rf bias
 
+for lime:
+
+	-G
+	-g number	gain
+	-X antenne select
+
+for hackrf
+
+	-G number	lna gain
+	-g number	vga gain
+
 -------------------------------------------------------------------------
 Copyrights
 -------------------------------------------------------------------------
@@ -215,7 +226,7 @@ Copyrights
 	Jan van Katwijk (J.vanKatwijk@gmail.com)
 	Lazy Chair Computing
 
-The dab-xxx-cli software is made available under the GPL-2.0. The terminal-DAB-xxx program uses a number of GPL-ed libraries, all rights gratefully acknowledged.
+The terminal-DAB-xxx software is made available under the GPL-2.0. The terminal-DAB-xxx program uses a number of GPL-ed libraries, all rights gratefully acknowledged.
 terminal-DAB-xxx is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
