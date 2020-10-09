@@ -61,6 +61,10 @@ Currently, the following devices are supported
 
 	e. AIRSpy devices
 
+	f. Hackrf devices,
+
+	g. limesdr device.
+
 ---------------------------------------------------------------------------
 Loading required libraries
 --------------------------------------------------------------------------
