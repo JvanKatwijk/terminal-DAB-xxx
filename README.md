@@ -27,6 +27,7 @@ If **PICTURES**  is configured (which is the default setting), slides,
 that are encoded in the **Program Associated Data** part of the DAB data,
 are made visible in a separate widget.
 
+
 The program supports:
 
 	selecting a service and scanning though the list of
@@ -43,6 +44,28 @@ The program supports:
 	are taken as channel list, and *next* and *previous* relate
 	to this list.
 	Otherwise, *next* and *previous* relate to all channels in Band III
+
+A typical cmdline is
+
+	terminal-DAB-sdrplay -C 5B -C 8A -C 8B -C 11C -C 12C -Q
+
+The program is compiled with support for the SDRplay, and is called
+with the autogain on.
+A channel list is given, containing the channels 5B, 8A, 8B, 11C and 12C
+(typically the channels with data that can be received here).
+
+It will start opening the channel 5B. The "next" channel - i.e. after
+touching the "+" on the keyboard - is 8A.
+The "previous" channel - i.e. after touching the "-" key on the keyboard
+is then channel 12C.
+
+If only a single channel was given as parameter, e.g.
+
+	terminal-DAB-sdrplay -C 12C -Q
+
+then the "next" channel - i.e. after touching the "+" on the keyboard -
+would be channel 12D (and the previous channel - i.e. after touching the
+"-" key of the keyboard would be channel 12B).
 
 -------------------------------------------------------------------------
 Supported devices
