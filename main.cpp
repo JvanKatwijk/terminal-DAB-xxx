@@ -801,6 +801,14 @@ void    printOptions	() {
 "	for airspy:\n"
 "	                  -G number\t	gain, range 1 .. 21\n"
 "	                  -b set rf bias\n"
-"	                  -c number\t ppm Correction\n";
+"	                  -c number\t ppm Correction\n"
+"       for hackrf:\n"
+"                         -v vgaGain\n"
+"                         -l lnaGain\n"
+"                         -a amp enable (default off)\n"
+"       for limesdr:\n"
+"                         -G number\t gain\n"
+"                         -X antenna selection\n"
+"                         -C channel\n";
 }
 
