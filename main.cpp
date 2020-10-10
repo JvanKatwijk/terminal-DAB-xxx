@@ -241,7 +241,7 @@ static
 std::string	nextChannel	(const std::string &s, bool dir) {
 int size = userChannels. size ();
 
-	if (size > 0) {
+	if (size > 1) {
 	   for (int i = 0; i < size; i ++) {
 	      if (userChannels. at (i) == s) {
 	         if (dir)
@@ -353,13 +353,8 @@ Mat img;
 	         soundChannel	= optarg;
 	         break;
 
-	      case 'B':
-	         userChannels. push_back (std::string (optarg));
-	         fprintf (stderr, "%s \n", optarg);
-	         break;
-
 	      case 'C':
-	         theChannel = std::string (optarg);
+	         userChannels. push_back (std::string (optarg));
 	         fprintf (stderr, "%s \n", optarg);
 	         break;
 
@@ -457,27 +452,15 @@ Mat img;
 	   }
 	}
 //
-	if (theChannel == std::string ("")) {
+	if (userChannels. size () == 0) {
 	   fprintf (stderr, "please specify a channel here\n");
 	   exit (21);
 	}
-
-	if (userChannels. size () > 0) {
-	   bool found = false;
-	   for (auto s: userChannels) {
-	      if (s == theChannel) {
-	         found = true;
-	         break;
-	      }
-	   }
-	   if (!found)
-	      userChannels. push_back (theChannel);
-	}
+	theChannel		= userChannels. at (0);
 
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;
-
 	int32_t frequency	= dabBand. Frequency (theChannel);
 	try {
 #ifdef	HAVE_SDRPLAY_V3

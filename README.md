@@ -39,11 +39,10 @@ The program supports:
 
 	Selecting "next" or "previous" channel is by using the "+" resp.
 	the "-" key.
-	There are two options, a user defined list of - apparently -
-	interesting channels can be passed as command line parameter.
-	If this list is given, the "next" and "previous" channel are
-	taken from this list, otherwise, they will be taken from
-	the channels in Band III.
+	If more than one channel is given as parameter, these channels
+	are taken as channel list, and *next* and *previous* relate
+	to this list.
+	Otherwise, *next* and *previous* relate to all channels in Band III
 
 -------------------------------------------------------------------------
 Supported devices
@@ -182,8 +181,7 @@ Normal use is
 
 dab-cmdline options are
 
-	-C Channel
-	-B channel to be added to user defined channel list
+	-C Channel to be added to user defined channel list
 	-A name	 select the audio channel (portaudio)
 
 for pluto:
