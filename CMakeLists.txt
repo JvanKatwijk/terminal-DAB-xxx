@@ -39,7 +39,7 @@ OPTION(LIMESDR	"Input: LimeSDR"  OFF)
 
 OPTION(CURSES	"ncurses"         ON)
 OPTION(PICTURES "show Slides"     ON)
-OPTION(FAAD	"libfaad"       ON)
+OPTION(FAAD	"libfaad"       OFF)
 OPTION(X64_DEFINED "optimize for x64/SSE"  OFF)
 OPTION(RPI_DEFINED "optimize for ARM/NEON" OFF)
 
@@ -151,11 +151,6 @@ endif ()
             message(FATAL_ERROR "please install FFTW3")
         endif ()
 
-        find_package(Faad)
-        if (NOT FAAD_FOUND )
-            message(FATAL_ERROR "please install libfaad")
-        endif ()
-
 	find_package(LibSndFile)
 	if (NOT LIBSNDFILE_FOUND)
 	   message(FATAL_ERROR "please install libsndfile")
@@ -177,7 +172,7 @@ endif ()
 
 	if (WAVFILES)
 	   include_directories (
-	        ./devices/wavfiles/
+	          ./devices/wavfiles/
 	   )
 
 	   set (${objectName}_HDRS

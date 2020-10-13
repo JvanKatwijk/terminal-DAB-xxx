@@ -34,8 +34,8 @@
   *	the class proper processes input and extracts the aac frames
   *	that are processed by the "faadDecoder" class
   */
-	fdkAAC::fdkAAC (audioOut_t soundOut, void *ctx) {
-	this	-> soundOut	= soundOut;
+	fdkAAC::fdkAAC (callbacks *the_callBacks, void *ctx) {
+	this	-> the_callBacks	= the_callBacks;
 	this	-> userData	= ctx;
 	working			= false;
 	handle			= aacDecoder_Open (TT_MP4_LOAS, 1);
@@ -112,8 +112,8 @@ int		output_size	= 8 * 2048;
 
 void	fdkAAC::output (int16_t *buffer, int     size,
 	                bool    isStereo, int     rate) {
-	if (soundOut == NULL)
+	if (the_callBacks -> audioOutHandler == NULL)
 	   return;
-	soundOut(buffer, size, rate, isStereo, userData);
+	the_callBacks -> audioOutHandler (buffer, size, rate, isStereo, userData);
 }
 
