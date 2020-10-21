@@ -50,14 +50,17 @@ typedef struct {
   */
 class	fdkAAC {
 public:
-		fdkAAC	(callbacks *, void *);
+		fdkAAC	(parameters *,
+	                 RingBuffer<std::complex<int16_t>> *,
+	                  void *);
 		~fdkAAC	();
 
 int16_t		MP42PCM (stream_parms *sp,
                          uint8_t   packet [],
                          int16_t   packetLength);
 private:
-	callbacks		*the_callBacks;
+	parameters		*the_parameters;
+	RingBuffer<std::complex<int16_t>> *pcmBuffer;
 	void			*userData;
 	void			output		(int16_t *, int, bool, int);
 	RingBuffer<int16_t>	*audioBuffer;

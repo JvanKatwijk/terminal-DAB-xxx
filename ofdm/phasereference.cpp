@@ -1,6 +1,6 @@
 #
 /*
- *    Copyright (C) 2016, 2017
+ *    Copyright (C) 2020
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
@@ -31,11 +31,11 @@
   *	the first non-null block of a frame
   *	The class inherits from the phaseTable.
   */
-	phaseReference::phaseReference (uint8_t	dabMode,
-	                                int16_t	diff_length):
-	                                     phaseTable (dabMode),
-	                                     params (dabMode),
-	                                     my_fftHandler (dabMode) {
+	phaseReference::phaseReference (parameters	*the_parameters,
+	                                int16_t		diff_length):
+	                                 phaseTable (the_parameters -> Mode),
+	                                 params (the_parameters -> Mode),
+	                                 my_fftHandler (the_parameters -> Mode) {
 int32_t	i;
 float	Phi_k;
         this    -> T_u          = params. get_T_u ();

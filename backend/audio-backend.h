@@ -42,7 +42,8 @@ class	audioSink;
 class	audioBackend:public virtualBackend {
 public:
 	audioBackend	(audiodata	*,
-	                 callbacks	*,
+	                 parameters	*,
+	                 RingBuffer<std::complex<int16_t>> *,
 	                 void	*);
 	~audioBackend	(void);
 int32_t	process		(int16_t *, int16_t);

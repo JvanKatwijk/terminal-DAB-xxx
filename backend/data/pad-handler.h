@@ -33,11 +33,11 @@ class	motObject;
 
 class	padHandler {
 public:
-		padHandler	(callbacks *, void *);
+		padHandler	(parameters *, void *);
 		~padHandler	(void);
 	void	processPAD	(uint8_t *, int16_t, uint8_t, uint8_t);
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	void		*ctx;
 	void		handle_variablePAD	(uint8_t *, int16_t, uint8_t);
 	void		handle_shortPAD		(uint8_t *, int16_t, uint8_t);

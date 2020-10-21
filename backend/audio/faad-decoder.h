@@ -42,13 +42,16 @@ typedef struct {
 
 class	faadDecoder {
 public:
-        		faadDecoder     (callbacks *, void *);
+        		faadDecoder     (parameters *,
+	                                 RingBuffer<std::complex<int16_t>> *,
+	                                 void *);
         		~faadDecoder	();
 	int16_t		MP42PCM		(stream_parms *sp,
                                  	uint8_t buffer [],
                                  	int16_t bufferLength);
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
+	RingBuffer<std::complex<int16_t>> *pcmBuffer;
 	void		*userData;
 	bool		initialize      (stream_parms *);
 	void		output		(int16_t *, int, bool, int);

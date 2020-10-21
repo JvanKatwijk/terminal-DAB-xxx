@@ -4,20 +4,20 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of dab-xxx-cli
+ *    This file is part of terminal-DAB
  *
- *    dab-xxx-cli is free software; you can redistribute it and/or modify
+ *    terminal-DAB is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation; either version 2 of the License, or
  *    (at your option) any later version.
  *
- *    dab-xxx-cli is distributed in the hope that it will be useful,
+ *    terminal-DAB is distributed in the hope that it will be useful,
  *    but WITHOUT ANY WARRANTY; without even the implied warranty of
  *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *    GNU General Public License for more details.
  *
  *    You should have received a copy of the GNU General Public License
- *    along with dab-xx-cli; if not, write to the Free Software
+ *    along with terminal-DAB; if not, write to the Free Software
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  *	Use the fdk-aac library.
@@ -34,8 +34,11 @@
   *	the class proper processes input and extracts the aac frames
   *	that are processed by the "faadDecoder" class
   */
-	fdkAAC::fdkAAC (callbacks *the_callBacks, void *ctx) {
-	this	-> the_callBacks	= the_callBacks;
+	fdkAAC::fdkAAC (parameters *the_parameters,
+	                RingBuffer<std::complex<int16_t>> *pcmBuffer,
+	                void *ctx) {
+	this	-> the_parameters	= the_parameters;
+	this	-> pcmBuffer		= pcmBuffer;
 	this	-> userData	= ctx;
 	working			= false;
 	handle			= aacDecoder_Open (TT_MP4_LOAS, 1);
@@ -112,8 +115,10 @@ int		output_size	= 8 * 2048;
 
 void	fdkAAC::output (int16_t *buffer, int     size,
 	                bool    isStereo, int     rate) {
-	if (the_callBacks -> audioOutHandler == NULL)
+	if (the_parameters -> audioOutHandler == NULL)
 	   return;
-	the_callBacks -> audioOutHandler (buffer, size, rate, isStereo, userData);
+	the_parameters -> audioOutHandler (buffer, size, rate, isStereo, userData);
+	pcmBuffer	-> putDataIntoBuffer ((std::complex<int16_t> *)buffer,
+	                                                       size / 2);
 }
 

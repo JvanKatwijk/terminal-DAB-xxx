@@ -22,7 +22,6 @@
  */
 
 #include	"fic-handler.h"
-#include	"msc-handler.h"
 #include	"protTables.h"
 //
 //	The 3072 bits of the serial motherword shall be split into
@@ -40,18 +39,16 @@
   * 	puncturing.
   *	The data is sent through to the fic processor
   */
-		ficHandler::ficHandler (uint8_t		dabMode,
-	                                callbacks	*the_callbacks,
+		ficHandler::ficHandler (parameters	*the_parameters,
 	                                void		*userData):
 	                                      viterbiSpiral (768),
 //	                                      viterbiHandler (768),
-	                                      fibProcessor (the_callbacks,
+	                                      fibProcessor (the_parameters,
 	                                                    userData),
-	                                                    params (dabMode) {
+	                                                    params (the_parameters -> Mode) {
 int16_t	i, j, k;
 int16_t	local	= 0;
 
-	(void)dabMode;
 	this	-> userData		= userData;
 	index		= 0;
 	BitsperBlock	= 2 * params. get_carriers ();

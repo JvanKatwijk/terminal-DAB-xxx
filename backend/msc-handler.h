@@ -42,8 +42,8 @@ class	virtualBackend;
 using namespace std;
 class mscHandler {
 public:
-			mscHandler		(uint8_t,
-	                                         callbacks	*,
+			mscHandler		(parameters	*,
+	                                         RingBuffer<std::complex<int16_t>> *,
 	                                 	 void		*);
 			~mscHandler		(void);
 	void		process_mscBlock	(std::complex<float> *,
@@ -54,6 +54,8 @@ public:
 	void		stop			(void);
 	void		start			(void);
 private:
+	parameters	*the_parameters;
+	RingBuffer<std::complex<int16_t>>	*pcmBuffer;
 virtual	void		run			(void);
 	void		process_mscBlock	(std::vector<int16_t>,
 	                                                      int16_t);
@@ -61,7 +63,6 @@ virtual	void		run			(void);
 	fft_handler	my_fftHandler;
 	std::complex<float>	*fft_buffer;
 	interLeaver	myMapper;
-	callbacks	*the_callBacks;
 	void		*userData;
 	Semaphore       freeSlots;
         Semaphore       usedSlots;

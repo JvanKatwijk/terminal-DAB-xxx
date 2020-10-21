@@ -32,12 +32,12 @@ class	motDirectory;
 
 class	motHandler:public virtual_dataHandler {
 public:
-		motHandler	(callbacks	*,
-	                         void	*ctx);
+		motHandler	(parameters	*,
+	                         void		*ctx);
 		~motHandler	(void);
 	void	add_mscDatagroup	(std::vector<uint8_t>);
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	void		*ctx;
 	void		setHandle	(motObject *, uint16_t);
 	motObject	*getHandle	(uint16_t);

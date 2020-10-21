@@ -218,14 +218,17 @@ struct quantizer_spec quantizer_table [17] = {
 ////////////////////////////////////////////////////////////////////////////////
 
 	mp2Processor::mp2Processor (int16_t		bitRate,
-	                            callbacks		*the_callBacks,
+	                            parameters		*the_parameters,
+	                            RingBuffer<std::complex<int16_t>> *_O_Buffer,
 	                            void		*ctx):
-	                                       my_padHandler (the_callBacks,
+	                                       my_padHandler (the_parameters,
 	                                                      ctx) {
 int16_t	i, j;
 int16_t *nPtr = &N [0][0];
 
-	this	-> ctx	= ctx;
+	this	-> the_parameters	= the_parameters;
+	this	-> _O_Buffer		= _O_Buffer;
+	this	-> ctx			= ctx;
 	// compute N[i][j]
 	for (i = 0;  i < 64;  i ++)
 	   for (j = 0;  j < 32;  ++j)
@@ -642,7 +645,7 @@ uint8_t	newbyte = (01 << bitnr);
 }
 
 void	mp2Processor::output (int16_t *buffer, int size, int rate, bool stereo) {
-	if (the_callBacks -> audioOutHandler != nullptr)
-	   the_callBacks -> audioOutHandler (buffer, size, rate, stereo, ctx);
+	if (the_parameters -> audioOutHandler != nullptr)
+	   the_parameters -> audioOutHandler (buffer, size, rate, stereo, ctx);
 }
 

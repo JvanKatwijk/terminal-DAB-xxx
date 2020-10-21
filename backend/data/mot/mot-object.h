@@ -31,7 +31,7 @@
 
 class	motObject {
 public:
-		motObject (callbacks	*,
+		motObject (parameters	*,
 	                   bool		dirElement,
 	                   uint16_t	transportId,
 	                   uint8_t	*segment,
@@ -46,7 +46,7 @@ public:
 	uint16_t	get_transportId (void);
 	int		get_headerSize	(void);
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	bool		dirElement;
 	uint16_t	transportId;
 	int16_t		numofSegments;

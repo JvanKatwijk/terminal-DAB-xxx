@@ -39,7 +39,7 @@ OPTION(LIMESDR	"Input: LimeSDR"  OFF)
 
 OPTION(CURSES	"ncurses"         ON)
 OPTION(PICTURES "show Slides"     ON)
-OPTION(FAAD	"libfaad"       OFF)
+OPTION(FAAD	"libfaad"       ON)
 OPTION(X64_DEFINED "optimize for x64/SSE"  OFF)
 OPTION(RPI_DEFINED "optimize for ARM/NEON" OFF)
 

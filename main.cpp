@@ -90,6 +90,7 @@ displayHandler	theDisplay;
 #define	S_ACKNOWLEDGE		0200
 #define	S_NEW_TIME		0201
 #define	S_NEW_PICTURE		0203
+#define	S_NEW_AUDIO		0204
 #define	S_ENSEMBLE_FOUND	0300
 #define	S_SERVICE_NAME		0301
 #define	S_DYNAMICLABEL		0302
@@ -125,6 +126,11 @@ std::string ensembleName;
 
 static
 audioBase	*soundOut	= nullptr;
+
+static
+RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
+static
+RingBuffer<std::complex<int16_t>> pcmBuffer (32768);
 
 static void sighandler (int signum) {
 	fprintf (stderr, "Signal caught, terminating!\n");
@@ -223,14 +229,26 @@ void    motdataHandler (std::string s, int d, void *ctx) {
 static
 void	audioOutHandler (int16_t *buffer, int size, int rate,
 	                              bool isStereo, void *ctx) {
-static bool isStarted	= false;
-
 	(void)isStereo;
+	message m;
+        m. key          = S_NEW_AUDIO;
+        m. string       = to_string (rate);
+        messageQueue. push (m);
+}
+
+static	
+void	pcmHandler	(int rate) {
+static	bool isStarted	= false;
+
 	if (!isStarted) {
 	   soundOut	-> restart ();
 	   isStarted	= true;
 	}
-	soundOut	-> audioOut (buffer, size, rate);
+	int16_t localBuf [1024];
+	while (pcmBuffer. GetRingBufferReadAvailable () > 1024 / 2) {
+	   pcmBuffer. getDataFromBuffer (localBuf, 1024 /2);
+//	   soundOut	-> audioOut (localBuf, 1024, rate);
+	}
 }
 
 //
@@ -272,7 +290,7 @@ audiodata ad;
 	theDisplay. show_audioData (&ad);
 }
 
-callbacks	the_callBacks;
+parameters	the_parameters;
 std::string	theChannel	= "12C";
 uint8_t		theMode		= 1;
 
@@ -307,7 +325,8 @@ const char	*optionsString	= "B:D:d:P:A:C:G:b";
 int		lnaGain		= 40;
 int		vgaGain		= 40;
 int		ppmOffset	= 0;
-const char	*optionsString	= "D:d:A:C:G:g:p:";
+bool		ampEnable	= false;
+const char	*optionsString	= "D:d:A:C:G:g:p:a";
 #elif	HAVE_LIMESDR
 int16_t		gain		= 70;
 std::string	antenna		= "Auto";
@@ -318,19 +337,19 @@ int16_t		latency		= 10;
 int		opt;
 struct sigaction sigact;
 bool	err;
-RingBuffer<std::complex<float>> _I_Buffer (16 * 32768);
 #ifdef	__SHOW_PICTURES__
 std::string image_path;
 Mat img;
 #endif
 
-	the_callBacks. signalHandler		= syncsignalHandler;
-	the_callBacks. timeHandler		= timeHandler;
-	the_callBacks. ensembleHandler		= ensemblenameHandler;
-	the_callBacks. audioOutHandler		= audioOutHandler;
-	the_callBacks. programnameHandler	= addtoEnsemble;
-	the_callBacks. dynamicLabelHandler	= dynamicLabelHandler;
-	the_callBacks. motdataHandler		= motdataHandler;
+	the_parameters. Mode			= 1;
+	the_parameters. signalHandler		= syncsignalHandler;
+	the_parameters. timeHandler		= timeHandler;
+	the_parameters. ensembleHandler		= ensemblenameHandler;
+	the_parameters. audioOutHandler		= audioOutHandler;
+	the_parameters. programnameHandler	= addtoEnsemble;
+	the_parameters. dynamicLabelHandler	= dynamicLabelHandler;
+	the_parameters. motdataHandler		= motdataHandler;
 
 	std::cerr << "dab-xxx-cli,\n \
 	                Copyright 2020 J van Katwijk, Lazy Chair Computing\n";
@@ -435,6 +454,10 @@ Mat img;
 	         ppmOffset	= 0;
 	         break;
 
+	      case 'a':
+	         ampEnable	= true;
+	         break;
+
 #elif	HAVE_LIME
 	      case 'G':
 	      case 'g':	
@@ -507,7 +530,8 @@ Mat img;
 	                                         frequency,
 	                                         ppmOffset,
 	                                         lnaGain,
-	                                         vgaGain);
+	                                         vgaGain,
+	                                         ampEnable);
 #elif	HAVE_LIME
 	   theDevice	= new limeHandler	(&_I_Buffer,
 	                                         frequency, gain, antenna);
@@ -536,8 +560,8 @@ Mat img;
 
 //	and with a sound device we now can create a "backend"
 	theRadio	= new dabProcessor (&_I_Buffer,
-	                                    theMode,
-	                                    &the_callBacks,
+	                                    &pcmBuffer,
+	                                    &the_parameters,
 	                                    nullptr		// Ctx
 	                          );
 	if (theRadio == nullptr) {
@@ -670,6 +694,9 @@ Mat img;
 	            (void)waitKey (500);
 	         }
 #endif
+	         break;
+	      case S_NEW_AUDIO:
+	         pcmHandler (std::stoi (m. string));
 	         break;
 
 	      case S_ENSEMBLE_FOUND:

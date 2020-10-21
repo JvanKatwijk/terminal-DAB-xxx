@@ -31,11 +31,11 @@
 #include	<stdio.h>
 #include	<stdint.h>
 #include	<math.h>
+#include	"dab-api.h"
 #include	"backend-base.h"
 #include	"pad-handler.h"
 #include	<stdio.h>
 #include	"ringbuffer.h"
-#include	"dab-api.h"
 
 #define KJMP2_MAX_FRAME_SIZE    1440  // the maximum size of a frame
 #define KJMP2_SAMPLES_PER_FRAME 1152  // the number of samples per frame
@@ -50,13 +50,15 @@ struct quantizer_spec {
 class	mp2Processor: public backendBase {
 public:
 			mp2Processor	(int16_t,
-	                                 callbacks	*,
+	                                 parameters	*,
+	                                 RingBuffer<std::complex<int16_t>> *,
 	                                 void	*);
 			~mp2Processor	(void);
 	void		addtoFrame	(uint8_t *);
 	
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
+	RingBuffer<std::complex<int16_t>> * _O_Buffer;
 	void		*ctx;
 	int16_t		bitRate;
 	padHandler	my_padHandler;

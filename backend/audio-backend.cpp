@@ -21,6 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
+#include	"dab-api.h"
 #include	"dab-constants.h"
 #include	"audio-backend.h"
 #include	"mp2processor.h"
@@ -38,7 +39,8 @@
 //
 //	fragmentsize == Length * CUSize
 	audioBackend::audioBackend	(audiodata	*d,
-	                                 callbacks	*the_callBacks,
+	                                 parameters	*the_parameters,
+	                                 RingBuffer<std::complex<int16_t>> *b,
 	                                 void		*ctx):
 	                                     virtualBackend (d -> startAddr,
 	                                                     d -> length),
@@ -72,12 +74,15 @@ int32_t i, j;
 //	                        shortForm ? "uep_protection" : "eep_protection");
 	if (dabModus == DAB) 
 	   our_backendBase = new mp2Processor (bitRate,
-	                                       the_callBacks,
+	                                       the_parameters,
+	                                       b,
 	                                       ctx);
 	else
 	if (dabModus == DAB_PLUS) 
 	   our_backendBase = new mp4Processor (bitRate,
-	                                       the_callBacks, ctx);
+	                                       the_parameters,
+	                                       b,
+	                                       ctx);
 	else		// cannot happen
 	   our_backendBase = new backendBase ();
 

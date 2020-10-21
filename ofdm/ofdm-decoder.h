@@ -26,6 +26,7 @@
 #include	<stdint.h>
 #include	<vector>
 #include	<atomic>
+#include	"dab-api.h"
 #include	"dab-constants.h"
 #include	"ringbuffer.h"
 #include	"phasetable.h"
@@ -36,7 +37,7 @@ class	dabParams;
 
 class	ofdmDecoder {
 public:
-		ofdmDecoder		(uint8_t	dabMode);
+		ofdmDecoder		(parameters	*the_parameters);
 		~ofdmDecoder		(void);
 	void	processBlock_0		(std::complex<float> *);
 	void	decode			(std::complex<float> *,

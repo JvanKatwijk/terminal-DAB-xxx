@@ -4,7 +4,7 @@
  *    Jan van Katwijk (J.vanKatwijk@gmail.com)
  *    Lazy Chair Computing
  *
- *    This file is part of the termial-DAB
+ *    This file is part of the terminal-DAB
  *
  *    terminal-DAB is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -31,22 +31,21 @@
   *	of the samplestream.
   */
 
-	dabProcessor::dabProcessor	(RingBuffer<std::complex<float>> *buffer,
-	                                 uint8_t	dabMode,
-	                                 callbacks	*the_callBacks,
+	dabProcessor::dabProcessor	(RingBuffer<std::complex<float>> *_I_Buffer,
+	                                 RingBuffer<std::complex<int16_t>> *pcmBuffer,
+	                                 parameters	*the_parameters,
 	                                 void		*userData):
-	                                    params (dabMode),
-	                                    myReader (this, buffer),
-	                                    phaseSynchronizer (dabMode,
+	                                    params (the_parameters -> Mode),
+	                                    myReader (_I_Buffer),
+	                                    phaseSynchronizer (the_parameters,
 	                                                       DIFF_LENGTH),
-	                                    my_ofdmDecoder (dabMode),
-	                                    my_ficHandler (dabMode,
-	                                                   the_callBacks,
+	                                    my_ofdmDecoder (the_parameters),
+	                                    my_ficHandler (the_parameters,
 	                                                   userData),
-	                                    my_mscHandler  (dabMode,
-	                                                    the_callBacks,
+	                                    my_mscHandler  (the_parameters,
+	                                                    pcmBuffer,
                                                             userData) {
-	this	-> the_callBacks	= the_callBacks;
+	this	-> the_parameters	= the_parameters;
 	this	-> userData		= userData;
 	this	-> T_null		= params. get_T_null ();
 	this	-> T_s			= params. get_T_s ();
@@ -104,7 +103,7 @@ notSynced:
 
               case NO_DIP_FOUND:
                  if  (++ dip_attempts >= 5) {
-                    the_callBacks -> signalHandler (false, userData);
+                    the_parameters -> signalHandler (false, userData);
                     dip_attempts = 0;
                  }
                  goto notSynced;
@@ -122,7 +121,7 @@ notSynced:
 	   if (startIndex < 0) { // no sync, try again
 	      isSynced	= false;
 	      if (++index_attempts > 10) {
-	         the_callBacks -> signalHandler (false, userData);
+	         the_parameters -> signalHandler (false, userData);
 	         index_attempts	= 0;
 	      }
 //	      fprintf (stderr, "startIndex %d\n", startIndex);
@@ -150,7 +149,7 @@ SyncOnPhase:
 	   index_attempts	= 0;
 	   dip_attempts		= 0;
 	   isSynced		= true;
-	   the_callBacks -> signalHandler (isSynced, userData);
+	   the_parameters -> signalHandler (isSynced, userData);
 
 //	Once here, we are synchronized, we need to copy the data we
 //	used for synchronization for block 0

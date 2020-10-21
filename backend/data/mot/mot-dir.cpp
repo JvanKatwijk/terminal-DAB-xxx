@@ -25,7 +25,7 @@
  */
 #include	"mot-dir.h"
 
-	motDirectory::motDirectory (callbacks	*the_callBacks,
+	motDirectory::motDirectory (parameters	*the_parameters,
 	                            void	*ctx,
 	                            uint16_t	transportId,
 	                            int16_t	segmentSize,
@@ -34,7 +34,7 @@
 	                            uint8_t	*segment) {
 int16_t	i;
 
-	   this	-> the_callBacks	= the_callBacks;
+	   this	-> the_parameters	= the_parameters;
 	   this	-> ctx			= ctx;
 	   for (i = 0; i < 512; i ++)
 	      marked [i] = false;
@@ -132,7 +132,7 @@ int16_t	i;
 	   if (transportId == 0)	// just a dummy
 	      break;
 	   uint8_t *segment	= &data [currentBase + 2];
-	   motObject *handle	= new motObject (the_callBacks,
+	   motObject *handle	= new motObject (the_parameters,
 	                                         true,
 	                                         transportId,
 	                                         segment,

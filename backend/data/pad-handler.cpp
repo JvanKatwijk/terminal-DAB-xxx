@@ -28,9 +28,9 @@
   *	\class padHandler
   *	Handles the pad segments passed on from mp2- and mp4Processor
   */
-	padHandler::padHandler	(callbacks	*the_callBacks,
-	                         void *ctx) {
-	this	-> the_callBacks	= the_callBacks;
+	padHandler::padHandler	(parameters	*the_parameters,
+	                         void		*ctx) {
+	this	-> the_parameters	= the_parameters;
 	this	-> ctx			= ctx;
 //
 //	mscGroupElement indicates whether we are handling an
@@ -107,7 +107,7 @@ int16_t	i;
 	         if (firstSegment && !lastSegment) {
                     segmentNumber   = b [last - 2] >> 4;
                     if (dynamicLabelText. size () > 0)
-                       the_callBacks ->
+                       the_parameters ->
 	                      dynamicLabelHandler (dynamicLabelText, ctx);
                     dynamicLabelText. clear ();
                  }
@@ -153,7 +153,7 @@ int16_t	i;
                     dynamicLabelText. append (segmentText);
 	      shortpadData. resize (0);
               if (dynamicLabelText. length () > 0)
-                 the_callBacks -> dynamicLabelHandler (dynamicLabelText, ctx);
+                 the_parameters -> dynamicLabelHandler (dynamicLabelText, ctx);
               dynamicLabelText. clear ();
            }
 	}
@@ -304,7 +304,7 @@ int16_t  dataLength	= 0;
 //	if at the end, show the label
 	      if (last) {
 	         if (!moreXPad) {
-	            the_callBacks ->
+	            the_parameters ->
 	                   dynamicLabelHandler (dynamicLabelText, ctx);
 	                              
 	         }
@@ -334,7 +334,7 @@ int16_t  dataLength	= 0;
 	                                     dataLength);
 	   dynamicLabelText. append(segmentText);
 	   if (!moreXPad && isLastSegment) {
-	      the_callBacks -> dynamicLabelHandler (dynamicLabelText, ctx);
+	      the_parameters -> dynamicLabelHandler (dynamicLabelText, ctx);
 	   }
 	}
 }
@@ -444,7 +444,7 @@ int32_t size    = (int)(data. size ()) <
 	   case 3:
 	      if (currentSlide == nullptr) {
 //	         fprintf (stderr, "creating %d\n", (uint32_t)transportId);
-	         currentSlide   = new motObject (the_callBacks,
+	         currentSlide   = new motObject (the_parameters,
 	                                         false,
 	                                         transportId,
 	                                         &data [index + 2],
@@ -459,7 +459,7 @@ int32_t size    = (int)(data. size ()) <
 //	                  currentSlide -> get_transportId (),
 //	                  (uint32_t)transportId);
 	         delete currentSlide;
-	         currentSlide   = new motObject (the_callBacks,
+	         currentSlide   = new motObject (the_parameters,
 	                                         false,
 	                                         transportId,
 	                                         &data [index + 2],

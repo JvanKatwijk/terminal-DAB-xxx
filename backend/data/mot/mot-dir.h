@@ -31,7 +31,7 @@
 
 class	motDirectory {
 public:
-			motDirectory	(callbacks	*,
+			motDirectory	(parameters	*,
 	                                 void	*,
 	                                 uint16_t,
 	                                 int16_t,
@@ -48,7 +48,7 @@ public:
                                         bool    lastSegment);
 	uint16_t	get_transportId	(void);
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	void		*ctx;
 	void		analyse_theDirectory (void);
 	uint16_t	transportId;

@@ -35,12 +35,10 @@
 //
 
 class	deviceHandler;
-class	dabProcessor;
 
 class	sampleReader {
 public:
-			sampleReader	(dabProcessor *,
-	                                 RingBuffer<std::complex<float>> *buffer);
+			sampleReader	(RingBuffer<std::complex<float>> *buffer);
 
 			~sampleReader	();
 		void	setRunning	(bool b);
@@ -50,7 +48,6 @@ public:
 	        void	getSamples	(std::complex<float> *v,
 	                                 int32_t n, int32_t phase);
 private:
-		dabProcessor	*theParent;
 	        RingBuffer<std::complex<float>> *_I_Buffer;
 		int32_t		currentPhase;
 		std::atomic<bool>	running;

@@ -85,6 +85,7 @@ typedef	struct {
 //	is invoked (if not specified as NULL)
 //
 typedef struct {
+	uint8_t		Mode;
         syncsignal_t    signalHandler;
         theTime_t       timeHandler;
         ensemblename_t  ensembleHandler;
@@ -92,6 +93,6 @@ typedef struct {
 	audioOut_t	audioOutHandler;
         dataOut_t       dynamicLabelHandler;
         motdata_t       motdataHandler;
-} callbacks;
+} parameters;
 //
 #endif

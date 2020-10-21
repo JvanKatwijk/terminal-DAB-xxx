@@ -21,6 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
+#include	"dab-api.h"
 #include	"sample-reader.h"
 #include	"device-handler.h"
 #include	"dab-processor.h"
@@ -28,11 +29,9 @@
 static
 std::complex<float> oscillatorTable [INPUT_RATE];
 
-	sampleReader::sampleReader (dabProcessor *parent,
-	                            RingBuffer<std::complex<float>> *buffer
+	sampleReader::sampleReader (RingBuffer<std::complex<float>> *buffer
 	                           ) {
 int	i;
-	theParent		= parent;
 	this	-> _I_Buffer	= buffer;
 	currentPhase		= 0;
 	sLevel			= 0;
@@ -91,7 +90,6 @@ std::complex<float> temp;
 	sampleCount	++;
 	if (++ sampleCount > INPUT_RATE / N) {
 	   sampleCount = 0;
-//	   theParent -> show_Corrector (phaseOffset);
 	}
 	return temp;
 }
@@ -124,7 +122,6 @@ int32_t		i;
 
 	sampleCount	+= n;
 	if (sampleCount > INPUT_RATE / N) {
-//	   theParent -> show_Corrector (Offset);
 	   sampleCount = 0;
 	}
 }

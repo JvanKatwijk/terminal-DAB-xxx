@@ -99,8 +99,6 @@ int	res;
 
 	hackrfHandler::~hackrfHandler	(void) {
 	stopReader ();
-	if (_I_Buffer != nullptr)
-	   delete _I_Buffer;
 	hackrf_close (theDevice);
 	hackrf_exit ();
 }

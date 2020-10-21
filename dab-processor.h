@@ -44,8 +44,8 @@
 class dabProcessor {
 public:
 		dabProcessor  	(RingBuffer<std::complex<float>> *,
-	                         uint8_t,		// Mode
-	                         callbacks	*,
+	                         RingBuffer<std::complex<int16_t>> *,
+	                         parameters	*,
 	                         void	*);
 	virtual ~dabProcessor	(void);
 	void	reset			(void);
@@ -60,8 +60,9 @@ public:
 	void		reset_msc		(void);
 private:
 //
-	RingBuffer<std::complex<float>>	*_I_Buffer;
-	callbacks	*the_callBacks;
+	RingBuffer<std::complex<float>>		*_I_Buffer;
+	RingBuffer<std::complex<int16_t>>	*_O_Buffer;
+	parameters	*the_parameters;
 	dabParams	params;
 	sampleReader	myReader;
 	phaseReference	phaseSynchronizer;

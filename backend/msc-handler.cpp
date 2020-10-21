@@ -21,6 +21,7 @@
  *    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #
+#include	"dab-api.h"
 #include	"dab-constants.h"
 #include	"msc-handler.h"
 #include	"audio-backend.h"
@@ -40,14 +41,15 @@ int16_t	cifVector [55296];
 
 static int blocksperCIF [] = {18, 72, 0, 36};
 
-		mscHandler::mscHandler	(uint8_t	dabMode,
-	                                 callbacks	*the_callBacks,
+		mscHandler::mscHandler	(parameters	*the_parameters,
+	                                 RingBuffer<std::complex<int16_t>> *pcmBuffer,
 	                                 void		*userData):
-	                                    params (dabMode),
-	                                    my_fftHandler (dabMode),
-	                                    myMapper (dabMode),
+	                                    params (the_parameters -> Mode),
+	                                    my_fftHandler (the_parameters -> Mode),
+	                                    myMapper (the_parameters -> Mode),
 	                                    freeSlots (params. get_L ()) {
-	this	-> the_callBacks	= the_callBacks;
+	this	-> the_parameters	= the_parameters;
+	this	-> pcmBuffer		= pcmBuffer;
 	this	-> userData		= userData;
 	theData				= new std::complex<float> *[params. get_L ()];
 	for (int i = 0; i < params. get_L (); i ++)
@@ -57,7 +59,7 @@ static int blocksperCIF [] = {18, 72, 0, 36};
 	cifCount		= 0;	// msc blocks in CIF
 	theBackends. push_back (new virtualBackend (0, 0));
 	BitsperBlock		= 2 * params. get_carriers ();
-	numberofblocksperCIF	= blocksperCIF [(dabMode - 1) & 03];
+	numberofblocksperCIF	= blocksperCIF [(the_parameters -> Mode - 1) & 03];
 
 	running. store (false);
 	phaseReference. resize (params. get_T_u ());
@@ -167,7 +169,8 @@ void	mscHandler::set_audioChannel (audiodata *d) {
 //
 //	we could assert here that theBackend == nullptr
 	theBackends. push_back (new audioBackend (d,
-	                                          the_callBacks,
+	                                          the_parameters,
+	                                          pcmBuffer,
 	                                          userData));
 	mutexer. unlock ();
 }

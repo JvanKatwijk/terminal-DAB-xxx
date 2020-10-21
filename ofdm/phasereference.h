@@ -27,14 +27,15 @@
 #include	<stdio.h>
 #include	<stdint.h>
 #include	<vector>
-#include	"phasetable.h"
+#include	"dab-api.h"
 #include	"dab-constants.h"
+#include	"phasetable.h"
 #include	"fft_handler.h"
 #include	"dab-params.h"
 
 class phaseReference : public phaseTable {
 public:
-		phaseReference (uint8_t, int16_t);
+		phaseReference (parameters *, int16_t);
 		~phaseReference	(void);
 	int32_t	findIndex	(std::complex<float> *, int);
 	int16_t	estimateOffset	(std::complex<float> *);

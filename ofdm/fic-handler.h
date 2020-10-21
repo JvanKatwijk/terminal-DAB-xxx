@@ -30,6 +30,7 @@
 #include	<stdio.h>
 #include	<stdint.h>
 #include	<vector>
+#include	"dab-api.h"
 #include	"viterbi-spiral.h"
 //#include	"viterbi-handler.h"
 #include	"fib-processor.h"
@@ -41,9 +42,8 @@
 class ficHandler: public viterbiSpiral {
 //class ficHandler: public viterbiHandler {
 public:
-		ficHandler		(uint8_t,	// dabMode
-	                                 callbacks	*,
-	                                 void	*);
+		ficHandler		(parameters	*,
+	                                 void		*);
 		~ficHandler		();
 	void	process_ficBlock	(std::vector<int16_t>, int16_t);
 	void	clearEnsemble		();
@@ -51,7 +51,7 @@ public:
 	void	dataforAudioService	(std::string &, audiodata *, int);
 	void	reset			();
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	fib_processor	fibProcessor;
 	dabParams	params;
 	void		*userData;

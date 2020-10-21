@@ -34,9 +34,9 @@ struct {
 	motObject	*motSlide;
 } motTable [15];
 
-	motHandler::motHandler (callbacks	*the_callBacks,
+	motHandler::motHandler (parameters	*the_parameters,
 	                        void		*ctx) {
-	this	-> the_callBacks	= the_callBacks;
+	this	-> the_parameters	= the_parameters;
 	this	-> ctx			= ctx;
 	orderNumber			= 0;
 
@@ -118,7 +118,7 @@ int32_t	i;
 	         motObject *h = getHandle (transportId);
 	         if (h != nullptr) 
 	            break;
-	         h = new motObject (the_callBacks,
+	         h = new motObject (the_parameters,
 	                            false,	// not within a directory
 	                            transportId,
 	                            &motVector [2],	
@@ -162,7 +162,7 @@ int32_t	i;
 //	         int32_t segSize
 //	                        = ((segment [9] & 0x1F) << 8) |
 //	                           segment [10];
-	         theDirectory	= new motDirectory (the_callBacks,
+	         theDirectory	= new motDirectory (the_parameters,
 	                                            ctx,
 	                                            transportId,
 	                                            segmentSize,

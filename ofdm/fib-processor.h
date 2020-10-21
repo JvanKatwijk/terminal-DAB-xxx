@@ -91,7 +91,7 @@
 
 class	fib_processor {
 public:
-		fib_processor		(callbacks	*,
+		fib_processor		(parameters	*,
 	                                 void		*);
 		~fib_processor		(void);
 	void	process_FIB		(uint8_t *, uint16_t);
@@ -105,7 +105,7 @@ public:
 	void	reset			();
 
 private:
-	callbacks	*the_callBacks;
+	parameters	*the_parameters;
 	void		*userData;
 	int32_t		dateTime [8];
 	serviceId	*findServiceId (int32_t);

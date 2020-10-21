@@ -25,7 +25,7 @@
  */
 #include	"mot-object.h"
 
-	   motObject::motObject (callbacks	*the_callBacks,
+	   motObject::motObject (parameters	*the_parameters,
 	                         bool		dirElement,
 	                         uint16_t	transportId,
 	                         uint8_t	*segment,
@@ -34,7 +34,7 @@
 	                         void		*ctx) {
 int32_t pointer = 7;
 
-	this	-> the_callBacks	= the_callBacks;
+	this	-> the_parameters	= the_parameters;
 	this	-> dirElement		= dirElement;
 	this	-> transportId		= transportId;
 	this	-> numofSegments	= -1;
@@ -162,7 +162,7 @@ std::vector<uint8_t> result;
 	std::string realName;
 
 //	MOT slide, to show
-	if (the_callBacks -> motdataHandler != nullptr) {
+	if (the_parameters -> motdataHandler != nullptr) {
 	   if (name == "")
 	      realName = "no name";
            else
@@ -171,7 +171,7 @@ std::vector<uint8_t> result;
 	   FILE * temp = fopen (realName. c_str (), "w");
 	   fwrite (result.data (), 1, result. size (), temp);
 	   fclose (temp);
-	   the_callBacks -> motdataHandler (realName, contentsubType, ctx);
+	   the_parameters -> motdataHandler (realName, contentsubType, ctx);
 	}
 }
 

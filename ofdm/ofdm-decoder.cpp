@@ -33,10 +33,10 @@
 
 /**
   */
-	ofdmDecoder::ofdmDecoder	(uint8_t	dabMode):
-	                                     params (dabMode),
-	                                     my_fftHandler (dabMode),
-	                                     myMapper    (dabMode) {
+	ofdmDecoder::ofdmDecoder	(parameters	*the_parameters):
+	                                     params (the_parameters -> Mode),
+	                                     my_fftHandler (the_parameters -> Mode),
+	                                     myMapper    (the_parameters -> Mode) {
 
 	this	-> T_s			= params. get_T_s ();
 	this	-> T_u			= params. get_T_u ();

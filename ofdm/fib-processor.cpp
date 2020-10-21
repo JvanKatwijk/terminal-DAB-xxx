@@ -95,9 +95,9 @@
                                    {416,1,384}};
 
 //
-	fib_processor::fib_processor (callbacks		*the_callBacks,
+	fib_processor::fib_processor (parameters	*the_parameters,
 	                              void		*userData) {
-	this	-> the_callBacks	= the_callBacks;
+	this	-> the_parameters	= the_parameters;
 	this	-> userData		= userData;
 	memset (dateTime, 0, sizeof (dateTime));
 	reset	();
@@ -783,13 +783,13 @@ serviceId *selectedService;
 //	in the fib structures, so release the lock
 void	fib_processor::addtoEnsemble	(const std::string &s, int32_t SId) {
 	fibLocker. unlock ();
-	the_callBacks -> programnameHandler (s, SId, userData);
+	the_parameters -> programnameHandler (s, SId, userData);
 	fibLocker. lock ();
 }
 
 void	fib_processor::nameofEnsemble  (int id, const std::string &s) {
 	fibLocker. unlock ();
-	the_callBacks -> ensembleHandler (s, id, userData);
+	the_parameters -> ensembleHandler (s, id, userData);
 	fibLocker. lock ();
 	isSynced	= true;
 }
@@ -944,6 +944,6 @@ int32_t	theTime	[6];
 	if (change) {
 	   adjustTime (dateTime);
 	   std::string timeString = mapTime (dateTime);
-	   the_callBacks ->  timeHandler (timeString, userData);
+	   the_parameters ->  timeHandler (timeString, userData);
 	}
 }

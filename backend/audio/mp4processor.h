@@ -28,11 +28,12 @@
  * 	frames into the ffmpeg or faad decoding library
  */
 //
-#include	"dab-constants.h"
 #include	<stdio.h>
 #include	<stdint.h>
-#include	"backend-base.h"
 #include	"dab-api.h"
+#include	"dab-constants.h"
+#include	"ringbuffer.h"
+#include	"backend-base.h"
 #include	"firecode-checker.h"
 #include	"reed-solomon.h"
 #ifdef	__WITH_FDK_AAC__
@@ -45,7 +46,8 @@
 class	mp4Processor : public backendBase {
 public:
 			mp4Processor	(int16_t,
-	                                 callbacks	*,
+	                                 parameters	*,
+	                                 RingBuffer<std::complex<int16_t>> *,
 	                                 void	*);
 			~mp4Processor	(void);
 	void		addtoFrame	(uint8_t *);
