@@ -247,7 +247,7 @@ static	bool isStarted	= false;
 	int16_t localBuf [1024];
 	while (pcmBuffer. GetRingBufferReadAvailable () > 1024 / 2) {
 	   pcmBuffer. getDataFromBuffer (localBuf, 1024 /2);
-//	   soundOut	-> audioOut (localBuf, 1024, rate);
+	   soundOut	-> audioOut (localBuf, 1024, rate);
 	}
 }
 

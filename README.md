@@ -49,12 +49,12 @@ A typical cmdline is
 
 	terminal-DAB-sdrplay -C 5B -C 8A -C 8B -C 11C -C 12C -Q
 
-The program is compiled with support for the SDRplay, and is called
-with the autogain on.
-A channel list is given, containing the channels 5B, 8A, 8B, 11C and 12C
+The program, mentioned here, is compiled with support for the SDRplay,
+and is called with the autogain  set ON.
+A **channel list** is given, containing the channels 5B, 8A, 8B, 11C and 12C
 (typically the channels with data that can be received here).
 
-It will start opening the channel 5B. The "next" channel - i.e. after
+On starting up, channel 5B is selected.. The "next" channel - i.e. after
 touching the "+" on the keyboard - is 8A.
 The "previous" channel - i.e. after touching the "-" key on the keyboard
 is then channel 12C.
@@ -124,19 +124,19 @@ On older Ubuntu systems, one might load
 	sudo apt-get install libfaad-dev
 
 It is certainly possible to download - or create - the faad-2.8 library
-that has been in use for years, however, there is an easier
+that has been in use for years, however, there is a potential other
 solution:
 For the dab-xxx-cli program one may choose to use the fdkaac library
 instead.
 
 	sudo apt-get install libfdk-aac-dev
 
-In the CMakeLists.txt file, the default is set to libfdk-aac,
+In the CMakeLists.txt file, the default is set to libfaad,
 Use
 
-	-DFAAD=ON
+	-DFAAD=OFF
 
-as option for cmake to select the faad library instead.
+as option for cmake to select the fdkaac library instead.
 
 ------------------------------------------------------------------------
 Building an executable
