@@ -169,8 +169,10 @@ std::vector<uint8_t> result;
 	      realName = name;
 	   realName = "/tmp/" + realName;
 	   FILE * temp = fopen (realName. c_str (), "w");
-	   fwrite (result.data (), 1, result. size (), temp);
-	   fclose (temp);
+	   if (temp != nullptr) {
+	      fwrite (result.data (), 1, result. size (), temp);
+	      fclose (temp);
+	   }
 	   the_parameters -> motdataHandler (realName, contentsubType, ctx);
 	}
 }
