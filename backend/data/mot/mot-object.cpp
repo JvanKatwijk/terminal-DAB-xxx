@@ -172,8 +172,8 @@ std::vector<uint8_t> result;
 	   if (temp != nullptr) {
 	      fwrite (result.data (), 1, result. size (), temp);
 	      fclose (temp);
+	      the_parameters -> motdataHandler (realName, contentsubType, ctx);
 	   }
-	   the_parameters -> motdataHandler (realName, contentsubType, ctx);
 	}
 }
 
