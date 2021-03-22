@@ -87,6 +87,7 @@ displayHandler	theDisplay;
 #define	S_SET_NEXTSERVICE	0104
 #define	S_SET_PREVSERVICE	0105
 #define	S_TIMER_TICK		0106
+#define	S_SELECT_SERVICE	0107
 #define	S_ACKNOWLEDGE		0200
 #define	S_NEW_TIME		0201
 #define	S_NEW_PICTURE		0203
@@ -290,6 +291,30 @@ audiodata ad;
 	theDisplay. show_audioData (&ad);
 }
 
+void	starter (std::string serviceName) {
+message m;
+	if (serviceName == "")
+	   return;
+	sleep (5);
+	m. key	= S_SELECT_SERVICE;
+	m. string = serviceName;
+	messageQueue. push (m);
+}
+
+	
+bool	matches (std::string s1, std::string s2) {
+const char *ss1 = s1. c_str ();
+const char *ss2 = s2. c_str ();
+
+	while ((*ss1 != 0) && (*ss2 != 0)) {
+	   if (*ss2 != *ss1)
+	      return false;
+	   ss1 ++;
+	   ss2 ++;
+	}
+	return (*ss2 == 0) && ((*ss1 == ' ') || (*ss1 == 0));
+}
+
 parameters	the_parameters;
 std::string	theChannel	= "12C";
 uint8_t		theMode		= 1;
@@ -301,36 +326,36 @@ const char	*optionsString	= "F:P:";
 std::string	fileName;
 #elif	HAVE_PLUTO
 int16_t		gain		= 60;
-const char	*optionsString	= "B:D:d:A:C:G:Q";
+const char	*optionsString	= "B:D:d:A:C:G:QS:";
 #elif	HAVE_RTLSDR
 int16_t		gain		= 60;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "B:D:d:A:C:G:Q";
+const char	*optionsString	= "B:D:d:A:C:G:QS:";
 #elif	HAVE_SDRPLAY	
 int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "B:D:d:P:A:C:G:L:Q";
+const char	*optionsString	= "B:D:d:P:A:C:G:L:QS:";
 #elif	HAVE_SDRPLAY_V3	
 int16_t		GRdB		= 30;
 int16_t		lnaState	= 4;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "B:D:d:P:A:C:G:L:Q";
+const char	*optionsString	= "B:D:d:P:A:C:G:L:QS:";
 #elif	HAVE_AIRSPY
 int16_t		gain		= 20;
 bool		rf_bias		= false;
 int16_t		ppmOffset	= 0;
-const char	*optionsString	= "B:D:d:P:A:C:G:b";
+const char	*optionsString	= "B:D:d:P:A:C:G:bS:";
 #elif	HAVE_HACKRF
 int		lnaGain		= 40;
 int		vgaGain		= 40;
 int		ppmOffset	= 0;
 bool		ampEnable	= false;
-const char	*optionsString	= "D:d:A:C:G:g:p:a";
+const char	*optionsString	= "D:d:A:C:G:g:p:aS:";
 #elif	HAVE_LIMESDR
 int16_t		gain		= 70;
 std::string	antenna		= "Auto";
-const char	*optionsString	= "D:d:A:C:G:g:X:";
+const char	*optionsString	= "D:d:A:C:G:g:X:S:";
 #endif
 std::string	soundChannel	= "default";
 int16_t		latency		= 10;
@@ -341,7 +366,7 @@ bool	err;
 std::string image_path;
 Mat img;
 #endif
-
+std::string	startName	= "";
 	the_parameters. Mode			= 1;
 	the_parameters. signalHandler		= syncsignalHandler;
 	the_parameters. timeHandler		= timeHandler;
@@ -375,6 +400,10 @@ Mat img;
 	      case 'C':
 	         userChannels. push_back (std::string (optarg));
 	         fprintf (stderr, "%s \n", optarg);
+	         break;
+
+	      case 'S':
+	         startName	= optarg;
 	         break;
 
 #ifdef	HAVE_WAVFILES
@@ -576,11 +605,12 @@ Mat img;
 	message m;
 	m. key	= S_START;
 	m. string	= "";
-	sleep (2);
 	messageQueue. push (m);
 
 	bool	channelChanged	= false;
 	run. store (true);
+	sleep (2);
+	std::thread startThread	= std::thread (&starter, startName);
 	std::thread keyboard_listener = std::thread (&listener);
 	std::thread timer;
 	channelChanged	= true;
@@ -673,6 +703,24 @@ Mat img;
 	         selectService (serviceNames [index_currentService]);
 	         break;
 
+	      case S_SELECT_SERVICE:
+	         channelChanged		= false;
+	         theDisplay. mark_service (index_currentService, " ");
+                 theDisplay. clear_audioData ();
+	         for (int i = 0; i < serviceNames. size (); i ++) {
+	            if (matches (serviceNames [i], m. string)) {
+	               index_currentService = i;
+                       theDisplay. mark_service (index_currentService, "*");
+#ifdef  __SHOW_PICTURES__
+                       if (!img. empty ())
+                          destroyAllWindows ();
+#endif
+                       selectService (m. string);
+	               break;
+	            }
+	         }
+	         break;
+
 	      case S_ACKNOWLEDGE:
 	         if (channelChanged) {
 	           theDisplay. mark_service (index_currentService, "*");
@@ -695,6 +743,7 @@ Mat img;
 	         }
 #endif
 	         break;
+
 	      case S_NEW_AUDIO:
 	         pcmHandler (std::stoi (m. string));
 	         break;
@@ -726,6 +775,7 @@ Mat img;
 	theDisplay. stop ();
 	soundOut	-> stop	();
 	keyboard_listener. join ();
+	startThread. join ();
 	delete	soundOut;
 	delete theDevice;
 	delete theRadio;
@@ -794,18 +844,6 @@ message m;
 	}
 }
 
-bool	matches (std::string s1, std::string s2) {
-const char *ss1 = s1. c_str ();
-const char *ss2 = s2. c_str ();
-
-	while ((*ss1 != 0) && (*ss2 != 0)) {
-	   if (*ss2 != *ss1)
-	      return false;
-	   ss1 ++;
-	   ss2 ++;
-	}
-	return (*ss2 == 0) && ((*ss1 == ' ') || (*ss1 == 0));
-}
 
 void    printOptions	() {
 	std::cerr << 
